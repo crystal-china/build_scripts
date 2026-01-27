@@ -57,7 +57,7 @@ will automatically pick them up.
 The only option you can pass is `-f` (force). If you use it, the cache will be invalidated 
 and the script will rerun `shards install` to fetch all your dependencies again.
 
-## Cross-Compiling a static binary for general C programs
+## Cross-Compiling a static binary for general C programs (use make) and rust (use cargo)
 
 You can also use this for general C programs, assuming the toolchains support it.
 
@@ -65,17 +65,18 @@ You can also use this for general C programs, assuming the toolchains support it
 # To build an AMD64 binary (This is the default)
 $: build_binary
 
-# To build an ARM64 binary 
+# To build an ARM64 binary, the supported arches is:
 $: PLATFORM=linux/arm64/v8 build_binary
 ```
 
-By default, the script runs the command: `make CC=gcc LDFLAGS=-static`.
+By default, the script runs the command: `make CC=gcc LDFLAGS='-static -Wl,-s'`.
 
 You can easily override this default command by just passing your preferred command
 directly, like this:
 
 ```sh
-$: build_binary make
+$: cd a_rust_project
+$: PLATFORM=linux/arm64/v8 build_binary cargo build --release
 ```
 
 currently support platform is:
