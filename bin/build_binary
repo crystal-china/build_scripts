@@ -30,7 +30,7 @@ docker_file=/tmp/Dockerfile.cc_build
 if ! podman images --format '{{.Repository}}' |grep -qs "localhost/$tag_name" || [[ "$force" == "-f" ]]; then
     cat <<'HEREDOC' > $docker_file
 ARG FORCE_ARG
-ARG alpine_version=3.22
+ARG alpine_version=3.23
 ARG alpine_mirror=mirrors.ustc.edu.cn
 
 # FROM alpine:$alpine_version
@@ -54,8 +54,11 @@ RUN set -eux; \
 
 WORKDIR /app
 
+# ENV RUSTFLAGS='-C target-feature=+crt-static -C link-arg=-static'
+# ENV PKG_CONFIG_ALL_STATIC=1
+
 # CMD (make clean); make CC=gcc LDFLAGS=-static
-CMD make CC=gcc LDFLAGS=-static
+CMD make CC=gcc LDFLAGS='-static -Wl,-s'
 HEREDOC
 
     BUILD_ARGS="
