@@ -33,7 +33,8 @@ ARG FORCE_ARG
 ARG alpine_version=3.22
 ARG alpine_mirror=mirrors.ustc.edu.cn
 
-FROM alpine:$alpine_version
+# FROM alpine:$alpine_version
+FROM rust:1-alpine
 
 ARG alpine_mirror
 RUN sed -i "s/dl-cdn.alpinelinux.org/$alpine_mirror/g" /etc/apk/repositories
@@ -58,7 +59,7 @@ CMD make CC=gcc LDFLAGS=-static
 HEREDOC
 
     BUILD_ARGS="
---platform $platform
+--platform $platform \
 -t $tag_name \
 -f $docker_file
 "
