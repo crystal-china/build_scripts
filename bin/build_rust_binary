@@ -2,7 +2,8 @@
 
 # 检测 all supported platform for alpine
 # podman run --rm mplatform/mquery alpine:latest
-ALLOWED_ARCHS=("linux/arm64/v8" "linux/arm/v7" "linux/arm/v6" "linux/amd64" "linux/386")
+# ALLOWED_ARCHS=("linux/arm64/v8" "linux/arm/v7" "linux/arm/v6" "linux/amd64" "linux/386")
+ALLOWED_ARCHS=("linux/arm64/v8" "linux/amd64")
 
 platform=${PLATFORM-linux/amd64}
 
@@ -20,24 +21,30 @@ if [ -z "$match_found" ]; then
     exit 1 # 退出并返回错误码
 fi
 
+declare -A target_map=(
+    ["linux/arm64/v8"]="aarch64-unknown-linux-musl"
+     ["linux/amd64"]="x86_64-unknown-linux-musl"
+)
+
+
 force="$1"
 
 set -eux
 
-tag_name=build_${platform}_binary
-docker_file=/tmp/Dockerfile.cc_build
+tag_name=build_rust_binary
+docker_file=/tmp/Dockerfile.rust_build
 
 if ! podman images --format '{{.Repository}}' |grep -qs "localhost/$tag_name" || [[ "$force" == "-f" ]]; then
-    cat <<'HEREDOC' > $docker_file
+    cat <<HEREDOC > $docker_file
 ARG FORCE_ARG
 ARG alpine_version=3.23
 ARG alpine_mirror=mirrors.ustc.edu.cn
 
-FROM alpine:$alpine_version
+FROM --platform=\$BUILDPLATFORM alpine:\$alpine_version
 # FROM rust:1-alpine
 
 ARG alpine_mirror
-RUN sed -i "s/dl-cdn.alpinelinux.org/$alpine_mirror/g" /etc/apk/repositories
+RUN sed -i "s/dl-cdn.alpinelinux.org/\$alpine_mirror/g" /etc/apk/repositories
 
 RUN set -eux; \
     apk add \
@@ -51,20 +58,23 @@ RUN set -eux; \
     xz-static \
     g++ make automake libtool autoconf \
     git curl \
+    zig \
     ;
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
 
-ENV PATH="/root/.cargo/bin:${PATH}"
+ENV PATH="/root/.cargo/bin:\${PATH}"
+
+RUN rustup target add aarch64-unknown-linux-musl
+
+RUN cargo install cargo-zigbuild --locked
 
 WORKDIR /app
 
-# CMD (make clean); make CC=gcc LDFLAGS=-static
-CMD make CC=gcc LDFLAGS='-static -Wl,-s'
+CMD cargo zigbuild --target ${target_map["$platform"]} --release
 HEREDOC
 
     BUILD_ARGS="
---platform $platform \
 -t $tag_name \
 -f $docker_file
 "
@@ -79,4 +89,4 @@ fi
 
 [[ "$force" == "-f" ]] && shift 1
 
-podman run --platform $platform -v $PWD:/app $tag_name "$@"
+podman run -v $PWD:/app $tag_name "$@"

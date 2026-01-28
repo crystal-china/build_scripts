@@ -88,3 +88,15 @@ You can run the command below to get additional platform information:
 ```sh
 $ podman run --rm mplatform/mquery alpine:latest
 ```
+
+## There is a build_rust_binary script for build rust only use zig cc
+
+Usage:
+
+	$: build_rust_binary
+
+Or
+
+	$: PLATFORM=linux/arm64/v8 build_rust_binary
+
+
