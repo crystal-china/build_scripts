@@ -30,9 +30,11 @@ docker_file=/tmp/Dockerfile.cc_build
 if ! podman images --format '{{.Repository}}' |grep -qs "localhost/$tag_name" || [[ "$force" == "-f" ]]; then
     cat <<'HEREDOC' > $docker_file
 ARG FORCE_ARG
+ARG alpine_version=3.23
 ARG alpine_mirror=mirrors.ustc.edu.cn
 
-FROM rust:1-alpine
+FROM alpine:$alpine_version
+# FROM rust:1-alpine
 
 ARG alpine_mirror
 RUN sed -i "s/dl-cdn.alpinelinux.org/$alpine_mirror/g" /etc/apk/repositories
@@ -47,8 +49,12 @@ RUN set -eux; \
     libxml2-static \
     gmp-static \
     xz-static \
-    g++ make automake libtool autoconf git \
+    g++ make automake libtool autoconf git curl \
     ;
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
+
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /app
 
