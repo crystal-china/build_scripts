@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# It's seem like passing --static is unnessary when use with zig cc.
+# Checking https://forum.crystal-lang.org/t/what-is-the-difference-of-with-or-without-static-option-when-cross-compile-target-x86-64-linux-musl/7117/3 for details.
+
+sb --cross-compile --target=aarch64-linux-musl "$@"
