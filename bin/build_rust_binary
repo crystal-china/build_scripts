@@ -71,7 +71,7 @@ RUN cargo install cargo-zigbuild --locked
 
 WORKDIR /app
 
-CMD cargo zigbuild --target ${target_map["$platform"]} --release
+CMD cargo zigbuild --release --target ${target_map["$platform"]}
 HEREDOC
 
     BUILD_ARGS="
