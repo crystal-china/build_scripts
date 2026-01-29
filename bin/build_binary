@@ -49,6 +49,7 @@ RUN set -eux; \
     libxml2-static \
     gmp-static \
     xz-static \
+    bzip2-dev bzip2-static \
     g++ make automake libtool autoconf \
     git curl \
     ;
