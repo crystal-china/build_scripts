@@ -13,7 +13,7 @@ cat <<'HEREDOC' > $docker_file
 # -*- mode: dockerfile-ts; -*-
 
 # 确保 build 和 linking 是同一个 alpine 版本
-ARG alpine_version=3.22
+ARG alpine_version=3.23
 # mirrors.ustc.edu.cn mirrors.tuna.tsinghua.edu.cn
 ARG alpine_mirror=mirrors.ustc.edu.cn
 
@@ -49,12 +49,13 @@ WORKDIR /app
 # 如果需要重新运行 shards install，取消注释，其目的是使后面的 RUN 命令 cache 失效
 ARG FORCE_ARG
 
-ARG flags="--release --no-debug --stats --time"
+ARG flags="--stats --time"
 ARG compile_time_flags="-Dstrict_multi_assign -Dno_number_autocast \
     -Duse_pcre2 -Dpreview_overload_order"
 ARG link_flags="--link-flags=-Wl,-L/app --link-flags=-s --link-flags=-pie"
 
-RUN which shards &>/dev/null && \
+RUN --mount=type=cache,target=/root/.cache/shards \
+     which shards &>/dev/null && \
     ( \
         shards install \
         --production \
@@ -68,13 +69,19 @@ RUN which shards &>/dev/null && \
 # 使后面的 CMD 命令 cache 失效
 ARG CACHEBUST_ARG
 
+RUN crystal env
+
 # 这里不要加 --progress, 加了 grep 无法匹配到 cc 的输出结果
-RUN shards build --production \
+RUN --mount=type=cache,target=/root/.cache/crystal \
+    ls -1 /root/.cache/crystal | tail; \
+    du -sh /root/.cache/crystal || true; \
+    shards build --production \
     --static \
     $flags $compile_time_flags $link_flags \
     --cross-compile --target=aarch64-linux-musl \
     |grep '^cc ' \
-    |tee bin/app.sh
+    |tee bin/app.sh; \
+    du -sh /root/.cache/crystal || true
 
 # bin/app.sh 必须不为空
 RUN test -s bin/app.sh
