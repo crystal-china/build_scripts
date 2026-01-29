@@ -20,6 +20,7 @@ RUN sed -i "s/dl-cdn.alpinelinux.org/$alpine_mirror/g" /etc/apk/repositories
 
 WORKDIR /app
 
+# 如果需要重新运行 shards install，取消注释，其目的是使后面的 RUN 命令 cache 失效
 ARG FORCE_ARG
 
 ARG flags="--release --no-debug --stats --time"
