@@ -140,34 +140,26 @@ SCRIPT_DIR=$(dirname $SCRIPT_PATH)
 SCRIPT_PARENT=$(dirname $SCRIPT_DIR)
 
 if echo "$*" |grep -F -qs -e '--target='; then
-    # For use hash map, BASH 4.0 is requried.
-    declare -A zig_target_map=(
-        ["x86_64-linux-musl"]="x86_64-linux-musl"
-         ["aarch64-linux-musl"]="aarch64-linux-musl"
-         ["x86_64-darwin"]="x86_64-macos-none"
-         ["aarch64-darwin"]="aarch64-macos-none"
-         ["amd64"]="x86_64-linux-musl"
-         ["arm64"]="aarch64-linux-musl"
-         ["amd64-mac"]="x86_64-macos-none"
-         ["arm64-mac"]="aarch64-macos-none"
-    )
-
-    declare -A libname_map=(
-        ["x86_64-linux-musl"]="x86_64-linux-musl"
-         ["aarch64-linux-musl"]="aarch64-linux-musl"
-         ["x86_64-darwin"]="x86_64-ventura"
-         ["aarch64-darwin"]="aarch64-ventura"
-         ["amd64"]="x86_64-linux-musl"
-         ["arm64"]="aarch64-linux-musl"
-         ["amd64-mac"]="x86_64-ventura"
-         ["arm64-mac"]="aarch64-ventura"
-    )
-
     cr_target=$(echo $* |sed 's#.*--target=\([a-z0-9_-]*\).*#\1#')
-    cr_really_target=${zig_target_map[$cr_target]}
-    lib_path="${SCRIPT_PARENT}/lib/${libname_map[$cr_target]}"
 
-    if [[ "$cr_really_target" =~ -macos-none ]]; then
+    # For use hash map, BASH 4.0 is requried.
+    declare -A mapping
+
+    mapping["x86_64-linux-musl"]="x86_64-linux-musl x86_64-linux-musl"
+    mapping["amd64"]="x86_64-linux-musl x86_64-linux-musl"
+
+    mapping["aarch64-linux-musl"]="aarch64-linux-musl aarch64-linux-musl"
+    mapping["arm64"]="aarch64-linux-musl aarch64-linux-musl"
+
+    mapping["x86_64-darwin"]="x86_64-macos-none x86_64-ventura"
+    mapping["amd64-mac"]="x86_64-macos-none x86_64-ventura"
+
+    mapping["aarch64-darwin"]="aarch64-macos-none aarch64-ventura"
+    mapping["arm64-mac"]="aarch64-macos-none aarch64-ventura"
+
+    read -r targetname libname <<< "${mapping[$cr_target]}"
+
+    if [[ "$targetname" =~ -macos-none ]]; then
         build_args="$* -Duse_libiconv"
     else
         build_args="$*"
@@ -176,7 +168,7 @@ if echo "$*" |grep -F -qs -e '--target='; then
     # Delete --progress if passed this option.
     build_args=${build_args//--progress/}
     # Replace target with really target
-    build_args=${build_args//$cr_target/$cr_really_target}
+    build_args=${build_args//$cr_target/$targetname}
     # Add --cross-compile if user not added it.
     build_args="${build_args//--cross-compile} --cross-compile"
 
@@ -185,8 +177,10 @@ if echo "$*" |grep -F -qs -e '--target='; then
     build_output=$(shards build ${build_args})
 
     if cc_output=$(echo "$build_output" |grep '^cc '); then
+        lib_path="${SCRIPT_PARENT}/lib/${libname}"
+
         echo "$cc_output" |
-            sed "s#^cc#zig cc -target ${cr_really_target}#" | # replace "cc" with "zig cc --target ???"
+            sed "s#^cc#zig cc -target ${targetname}#" | # replace "cc" with "zig cc --target ???"
             sed "s#-L[^ ]*#-L${lib_path}#" | # Where to find static libraries.
             sed "s#.*#& -lunwind#" |        # Add -lunwind is necessary for Crystal backtrace feature.
             sed "s#-lxml2#-lxml2 -llzma#" | # Support built with libxml2
