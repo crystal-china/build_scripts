@@ -71,6 +71,9 @@ RUN cargo install cargo-zigbuild --locked
 
 WORKDIR /app
 
+# 允许 override 这个变量，因为在 树莓派下使用 14，而 amd64 为 4
+ARG JEMALLOC_SYS_WITH_LG_PAGE
+
 CMD cargo zigbuild --release --target ${target_map["$platform"]}
 HEREDOC
 
