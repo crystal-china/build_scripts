@@ -65,27 +65,6 @@
       url: https://ghcr.io/v2/homebrew/core/pcre2/blobs/sha256:e71e438a81766aafffd719f90ba93cdaa158f91c08e19d96428fa841da15bd5a
       sha256: "e71e438a81766aafffd719f90ba93cdaa158f91c08e19d96428fa841da15bd5a"
 
-- name: libsodium
-  version: "1.0.20-r1"
-  darwin_version: "1.0.20"
-  # alpine package: libsodium-static
-  # homebrew formulae: libsodium
-  files:
-    - libsodium.a
-  binaries:
-    - platform: aarch64-linux-musl
-      url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.23/main/aarch64/libsodium-static-1.0.20-r1.apk
-      sha256: "3ec8fde6806611be8eec5f9bc85718e6318487ef1ed933f19f2a613b1027b269"
-    - platform: x86_64-linux-musl
-      url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.23/main/x86_64/libsodium-static-1.0.20-r1.apk
-      sha256: "7643127e1271c7b9427bfdbc8e3917cbe399dbf39e3695b09448c781861d0613"
-    - platform: aarch64-ventura
-      url: https://ghcr.io/v2/homebrew/core/libsodium/blobs/sha256:21b83b95eef039b914d712f4ac5d235d85e1f1143383dfa9c5359f0cc88fa08d
-      sha256: "21b83b95eef039b914d712f4ac5d235d85e1f1143383dfa9c5359f0cc88fa08d"
-    - platform: x86_64-ventura
-      url: https://ghcr.io/v2/homebrew/core/libsodium/blobs/sha256:5de3b5180b73678d93c4c69a77d662afd6aac0bfd71246be6e78cfacf97cc3d7
-      sha256: "5de3b5180b73678d93c4c69a77d662afd6aac0bfd71246be6e78cfacf97cc3d7"
-
 - name: openssl
   version: "3.5.5-r0"
   darwin_version: "3.3.1"
