@@ -22,7 +22,7 @@ fi
 
 force="$1"
 
-set -eux
+set -eu
 
 tag_name=build_${platform}_binary
 docker_file=/tmp/Dockerfile.cc_build
@@ -50,14 +50,15 @@ RUN set -eux; \
     gmp-static \
     xz-static \
     bzip2-dev bzip2-static \
+    libpcap-dev \
     g++ make automake libtool autoconf \
     git curl \
     ;
 
 WORKDIR /app
 
-# CMD (make clean); make CC=gcc LDFLAGS=-static
-CMD make CC=gcc LDFLAGS='-static -Wl,-s'
+# CMD  make CC=gcc LDFLAGS=-static
+CMD (make clean &>/dev/null || true); make CC=gcc LDFLAGS='-static -Wl,-s'
 HEREDOC
 
     BUILD_ARGS="
@@ -67,10 +68,9 @@ HEREDOC
 "
 
     if [[ "$force" == "-f" ]]; then
-        BUILD_ARGS="--build-arg FORCE_ARG=$(date +%s) $BUILD_ARGS"
+        BUILD_ARGS="--build-arg FORCE_ARG=$(date +%s) --progress=plain --no-cache $BUILD_ARGS"
     fi
 
-    # 调试输出，使用 --progress=plain --no-cache
     podman buildx build $BUILD_ARGS
 fi
 
