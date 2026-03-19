@@ -4,7 +4,7 @@ set -eu
 
 package_name=$1
 group=${2-main}
-version=v3.22
+version=v3.23
 
 alpine_mirror_site=${ALPINE_MIRROR_SITE-https://dl-cdn.alpinelinux.org}
 
