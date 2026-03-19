@@ -65,28 +65,6 @@
       url: https://ghcr.io/v2/homebrew/core/pcre2/blobs/sha256:e71e438a81766aafffd719f90ba93cdaa158f91c08e19d96428fa841da15bd5a
       sha256: "e71e438a81766aafffd719f90ba93cdaa158f91c08e19d96428fa841da15bd5a"
 
-# - name: libevent
-#   version: "2.1.12-r8"
-#   darwin_version: "2.1.12"
-#   # alpine package: libevent-static
-#   # homebrew formulae: libevent
-#   files:
-#     - libevent.a
-#     - libevent_pthreads.a
-#   binaries:
-#     - platform: aarch64-linux-musl
-#       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.22/main/aarch64/libevent-static-2.1.12-r8.apk
-#       sha256: "e74e1e58940ab124f4cc9fe4bf6a0a4e99b08bd491766f33ab99516866deb3b3"
-#     - platform: x86_64-linux-musl
-#       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.22/main/x86_64/libevent-static-2.1.12-r8.apk
-#       sha256: "851f6df32cc07ad3af4f240a60b87275ae923706311d4049c27784c3b292ba2e"
-#     - platform: aarch64-ventura
-#       url: https://ghcr.io/v2/homebrew/core/libevent/blobs/sha256:a75d453a7fe2aba1eaba334621b7bd9f0ff6f9e1f04aa400565f68711a9f6db4
-#       sha256: "a75d453a7fe2aba1eaba334621b7bd9f0ff6f9e1f04aa400565f68711a9f6db4"
-#     - platform: x86_64-ventura
-#       url: https://ghcr.io/v2/homebrew/core/libevent/blobs/sha256:79a1036d3428c6ad8325803912e9ff0f74b8a8202908ae8594959c27e998c90b
-#       sha256: "79a1036d3428c6ad8325803912e9ff0f74b8a8202908ae8594959c27e998c90b"
-
 - name: libsodium
   version: "1.0.20-r1"
   darwin_version: "1.0.20"
