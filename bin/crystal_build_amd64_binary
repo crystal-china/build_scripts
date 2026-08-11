@@ -44,7 +44,7 @@ ARG CACHEBUST_ARG
 
 # 这里不要加 --progress, 加了 grep 无法匹配到 cc 的输出结果
 RUN shards build --production \
-    --static \
+    --static --link-flags=-no-pie \
     $flags $compile_time_flags $link_flags
 HEREDOC
 

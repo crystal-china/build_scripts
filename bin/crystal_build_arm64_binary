@@ -76,7 +76,7 @@ RUN --mount=type=cache,target=/root/.cache/crystal \
     ls -1 /root/.cache/crystal | tail; \
     du -sh /root/.cache/crystal || true; \
     shards build --production \
-    --static \
+    --static --link-flags=-no-pie \
     $flags $compile_time_flags $link_flags \
     --cross-compile --target=aarch64-linux-musl \
     |grep '^cc ' \
