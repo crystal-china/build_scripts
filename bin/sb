@@ -138,6 +138,7 @@ _bsd_stat_readlink() {
 SCRIPT_PATH=$(realpath "$0")
 SCRIPT_DIR=$(dirname $SCRIPT_PATH)
 SCRIPT_PARENT=$(dirname $SCRIPT_DIR)
+build_command="${SB_BUILD_COMMAND:-shards}"
 
 if echo "$*" |grep -F -qs -e '--target='; then
     cr_target=$(echo $* |sed 's#.*--target=\([a-z0-9_-]*\).*#\1#')
@@ -174,7 +175,7 @@ if echo "$*" |grep -F -qs -e '--target='; then
 
     tmpfile="$(mktemp -d)/$$"
 
-    build_output=$(shards build ${build_args})
+    build_output=$(${build_command} build ${build_args})
 
     if cc_output=$(echo "$build_output" |grep '^cc '); then
         lib_path="${SCRIPT_PARENT}/lib/${libname}"
@@ -190,5 +191,5 @@ if echo "$*" |grep -F -qs -e '--target='; then
     fi
 
 else
-    shards build "$@"
+    ${build_command} build "$@"
 fi

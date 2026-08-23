@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+
+SB_BUILD_COMMAND=crystal sb "$@"
