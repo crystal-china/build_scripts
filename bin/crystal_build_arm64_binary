@@ -52,7 +52,7 @@ ARG FORCE_ARG
 ARG flags="--stats --time"
 ARG compile_time_flags="-Dstrict_multi_assign -Dno_number_autocast \
     -Duse_pcre2 -Dpreview_overload_order"
-ARG link_flags="--link-flags=-Wl,-L/app --link-flags=-s --link-flags=-pie"
+ARG link_flags="--link-flags=-Wl,-L/app --link-flags=-s --link-flags=-no-pie"
 
 RUN --mount=type=cache,target=/root/.cache/shards \
      which shards &>/dev/null && \
@@ -76,7 +76,7 @@ RUN --mount=type=cache,target=/root/.cache/crystal \
     ls -1 /root/.cache/crystal | tail; \
     du -sh /root/.cache/crystal || true; \
     shards build --production \
-    --static --link-flags=-no-pie \
+    --static \
     $flags $compile_time_flags $link_flags \
     --cross-compile --target=aarch64-linux-musl \
     |grep '^cc ' \
@@ -147,7 +147,7 @@ if [[ "$cr_file" == "-ff" ]]; then
     shift 1
 fi
 
-# 调试输出，使用 --progress=plain --no-cache
+# 调试输出，使用 --progress=plain
 podman buildx build $BUILD_ARGS --target cross_compile
 
 podman buildx build $BUILD_ARGS --target target_linking

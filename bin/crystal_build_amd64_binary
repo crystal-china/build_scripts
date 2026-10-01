@@ -18,6 +18,8 @@ FROM crystallang/crystal:1-alpine AS official_release
 ARG alpine_mirror
 RUN sed -i "s/dl-cdn.alpinelinux.org/$alpine_mirror/g" /etc/apk/repositories
 
+RUN apk add --no-cache gmp-static
+
 WORKDIR /app
 
 # 如果需要重新运行 shards install，取消注释，其目的是使后面的 RUN 命令 cache 失效
@@ -26,7 +28,7 @@ ARG FORCE_ARG
 ARG flags="--release --no-debug --stats --time"
 ARG compile_time_flags="-Dstrict_multi_assign -Dno_number_autocast \
     -Duse_pcre2 -Dpreview_overload_order"
-ARG link_flags="--link-flags=-Wl,-L/app --link-flags=-s --link-flags=-pie"
+ARG link_flags="--link-flags=-Wl,-L/app --link-flags=-s --link-flags=-no-pie"
 
 RUN which shards &>/dev/null && \
     ( \
@@ -44,7 +46,7 @@ ARG CACHEBUST_ARG
 
 # 这里不要加 --progress, 加了 grep 无法匹配到 cc 的输出结果
 RUN shards build --production \
-    --static --link-flags=-no-pie \
+    --static \
     $flags $compile_time_flags $link_flags
 HEREDOC
 
@@ -77,7 +79,7 @@ if [[ "$cr_file" == "-ff" ]]; then
     shift 1
 fi
 
-# 调试输出，使用 --progress=plain --no-cache --pull=always
+# 调试输出，使用 --progress=plain
 # 如果使用 podman, 已经帮你处理了 -v $PWD:/app 时会遇到的权限的问题，爽歪歪
 podman build $BUILD_ARGS
 
