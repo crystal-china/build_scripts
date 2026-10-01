@@ -72,7 +72,12 @@ if [[ "$cr_file" == "-f" ]]; then
     shift 1
 fi
 
-# 调试输出，使用 --progress=plain --no-cache
+if [[ "$cr_file" == "-ff" ]]; then
+    BUILD_ARGS="$BUILD_ARGS --no-cache --pull=always"
+    shift 1
+fi
+
+# 调试输出，使用 --progress=plain --no-cache --pull=always
 # 如果使用 podman, 已经帮你处理了 -v $PWD:/app 时会遇到的权限的问题，爽歪歪
 podman build $BUILD_ARGS
 

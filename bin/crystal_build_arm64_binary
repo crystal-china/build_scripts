@@ -142,6 +142,10 @@ if [[ "$cr_file" == "-f" ]]; then
     shift 1
 fi
 
+if [[ "$cr_file" == "-ff" ]]; then
+    BUILD_ARGS="$BUILD_ARGS --no-cache --pull=always"
+    shift 1
+fi
 
 # 调试输出，使用 --progress=plain --no-cache
 podman buildx build $BUILD_ARGS --target cross_compile

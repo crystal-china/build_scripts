@@ -54,8 +54,8 @@ link_flags=--link-flags=-Wl,-L/app --link-flags=-s --link-flags=-pie
 Just rename that file to build_flags.conf, set your arguments there, and both scripts
 will automatically pick them up.
 
-The only option you can pass is `-f` (force). If you use it, the cache will be invalidated 
-and the script will rerun `shards install` to fetch all your dependencies again.
+Pass `-f`option, the cache will be invalidated and the script will rerun `shards install` to fetch all your dependencies again.
+Passing -ff option, will force `--pull=always --no-cache`, which cause always pull the latest image, and rebuild from the scratch.
 
 ## Cross-Compiling a static binary for general C programs (use make) and rust (use cargo)
 
