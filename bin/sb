@@ -175,9 +175,9 @@ if echo "$*" |grep -F -qs -e '--target='; then
 
     tmpfile="$(mktemp -d)/$$"
 
-    build_output=$(${build_command} build ${build_args})
+    ${build_command} build ${build_args} |tee $tmpfile
 
-    if cc_output=$(echo "$build_output" |grep '^cc '); then
+    if cc_output=$(cat "$tmpfile" |grep '^cc '); then
         lib_path="${SCRIPT_PARENT}/lib/${libname}"
 
         echo "$cc_output" |
