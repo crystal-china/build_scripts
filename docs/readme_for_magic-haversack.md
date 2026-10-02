@@ -16,9 +16,9 @@ If you are use linux, all dependencies is almost available, except zig compiler.
  ╰─ $ tree -L1 lib
 lib
 ├── aarch64-linux-musl
-├── aarch64-monterey
+├── aarch64-sonoma
 ├── x86_64-linux-musl
-└── x86_64-monterey
+└── x86_64-sonoma
 ```
 
 3. Add `PROJECT_ROOT/bin` into system $PATH, then you can run `sb` script for cross build a Crystal program, you can always use `sb ...` as an alternative of `shards build ...`
@@ -62,7 +62,7 @@ You can use `sb --target=arm64` instead.
 
 ```sh
  ╰─ $ sb --cross-compile --target=x86_64-darwin --static
-zig cc -target x86_64-macos-none bin/college.o -o bin/college  -rdynamic -static -L/home/zw963/Crystal/crystal-china/crystal_build_scripts/lib/x86_64-monterey -lgmp -lyaml -lz `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libssl || printf %s '-lssl -lcrypto'` `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libcrypto || printf %s '-lcrypto'` -lpcre2-8 -lgc -lpthread -ldl -levent -liconv -lunwind
+zig cc -target x86_64-macos-none bin/college.o -o bin/college  -rdynamic -static -L/home/zw963/Crystal/crystal-china/crystal_build_scripts/lib/x86_64-sonoma -lgmp -lyaml -lz `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libssl || printf %s '-lssl -lcrypto'` `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libcrypto || printf %s '-lcrypto'` -lpcre2-8 -lgc -lpthread -ldl -levent -liconv -lunwind
 
   ╰─ $ file bin/college
 bin/college: Mach-O 64-bit x86_64 executable, flags:<NOUNDEFS|DYLDLINK|TWOLEVEL|NO_REEXPORTED_DYLIBS|PIE|HAS_TLV_DESCRIPTORS>
@@ -75,7 +75,7 @@ You can use `sb --target=amd64-mac` instead.
 ```sh
 
  ╰─ $ sb --cross-compile --target=aarch64-darwin --static
-zig cc -target aarch64-macos-none bin/college.o -o bin/college  -rdynamic -static -L/home/zw963/Crystal/crystal-china/crystal_build_scripts/lib/aarch64-monterey -lgmp -lyaml -lz `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libssl || printf %s '-lssl -lcrypto'` `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libcrypto || printf %s '-lcrypto'` -lpcre2-8 -lgc -lpthread -ldl -levent -liconv -lunwind
+zig cc -target aarch64-macos-none bin/college.o -o bin/college  -rdynamic -static -L/home/zw963/Crystal/crystal-china/crystal_build_scripts/lib/aarch64-sonoma -lgmp -lyaml -lz `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libssl || printf %s '-lssl -lcrypto'` `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libcrypto || printf %s '-lcrypto'` -lpcre2-8 -lgc -lpthread -ldl -levent -liconv -lunwind
 
  ╰─ $ file bin/college
 bin/college: Mach-O 64-bit arm64 executable, flags:<NOUNDEFS|DYLDLINK|TWOLEVEL|NO_REEXPORTED_DYLIBS|PIE|HAS_TLV_DESCRIPTORS>
@@ -153,10 +153,19 @@ Then override specified yaml section use the above url,sha256 output part.
 2. Typing t, then filter with the package name(probably use different name with alpine, 
    e.g. for `gc` library, need search file `bdw-gc.rb`), check `homebrew formulae` 
    in libs.yml for correct file name.
-3. Check the bottle...do block, Select the oldest macOS code name which support 
-   both x86_64/aarch64. for now, we use ventura.
-4. Copy/Paste the specified sha256 hash into correct position.
+3. Check the `bottle do` block. Select the oldest macOS code name supported by
+   both x86_64/aarch64 across all selected libraries. Currently we use Sonoma
+   (`arm64_sonoma` for aarch64 and `sonoma` for x86_64). If the current formula
+   has no Intel macOS bottle, use the last formula revision that provides both
+   architectures; the pinned formula links are recorded in `libs.yml`.
+4. Update both the GHCR blob URL and `sha256`, and set `darwin_version` to the
+   bottle package version, including any Homebrew revision suffix (e.g. `10.47_1`).
+   Keep the Alpine `version` separate. If the macOS code name changes, update
+   the platform names in `libs.yml` and the library directory mappings in `bin/sb`.
 5. iconv is necessary only for Darwin, you don't need update it for alpine.
+6. Darwin ICU entries intentionally use stubs: the selected libxml2 bottles
+   do not depend on ICU. libxml2 bottles provide `libxml2.16.dylib` and
+   `libxml2.dylib`; the Alpine package still provides `libxml2.a`.
 
 ## How it works
 
