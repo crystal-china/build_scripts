@@ -152,11 +152,11 @@ if echo "$*" |grep -F -qs -e '--target='; then
     mapping["aarch64-linux-musl"]="aarch64-linux-musl aarch64-linux-musl"
     mapping["arm64"]="aarch64-linux-musl aarch64-linux-musl"
 
-    mapping["x86_64-darwin"]="x86_64-macos-none x86_64-ventura"
-    mapping["amd64-mac"]="x86_64-macos-none x86_64-ventura"
+    mapping["x86_64-darwin"]="x86_64-macos-none x86_64-sonoma"
+    mapping["amd64-mac"]="x86_64-macos-none x86_64-sonoma"
 
-    mapping["aarch64-darwin"]="aarch64-macos-none aarch64-ventura"
-    mapping["arm64-mac"]="aarch64-macos-none aarch64-ventura"
+    mapping["aarch64-darwin"]="aarch64-macos-none aarch64-sonoma"
+    mapping["arm64-mac"]="aarch64-macos-none aarch64-sonoma"
 
     read -r targetname libname <<< "${mapping[$cr_target]}"
 
