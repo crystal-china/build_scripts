@@ -220,7 +220,7 @@ def build_non_lto_gmp(platform, zig_target)
     "ZIG_GLOBAL_CACHE_DIR=#{zig_cache_dir}",
     "CC='zig cc -target #{zig_target}'",
     "CC_FOR_BUILD='cc'",
-    "CFLAGS='-O3'",
+    "CFLAGS='-O3 -fno-lto'",
     "AR='llvm-ar'",
     "RANLIB='llvm-ranlib'",
     "#{File.expand_path("configure", source_dir)}",
@@ -234,7 +234,7 @@ def build_non_lto_gmp(platform, zig_target)
 
   sh configure
   sh "cd #{build_dir} && ZIG_GLOBAL_CACHE_DIR=#{zig_cache_dir} make -j#{Etc.nprocessors}"
-  sh "strip -g #{File.join(build_dir, ".libs", "libgmp.a")}"
+  sh "llvm-strip -g #{File.join(build_dir, ".libs", "libgmp.a")}"
 
   cp File.join(build_dir, ".libs", "libgmp.a"), File.join(lib_dir, "libgmp.a")
   cp File.join(build_dir, "gmp.pc"), File.join(pkg_dir, "gmp.pc")
