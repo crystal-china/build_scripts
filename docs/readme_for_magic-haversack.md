@@ -1,16 +1,16 @@
 ## Dependencies
 
-If you are use linux, all dependencies is almost available, except zig compiler.
+On Linux, most of these tools are already available, though you may need to install the Zig compiler.
 
-- BASH (version > 4.0)
+- Bash (version > 4.0)
 - sed
-- zig compiler
-- Ruby (Optional), It only necessary if you want download the libraries by yourself, I will upload those libraries as assets in [release page](https://github.com/crystal-china/crystal_build_scripts/releases).
+- Zig compiler
+- Ruby (optional): only needed if you want to fetch the libraries yourself. I also upload the libraries as assets on the [releases page](https://github.com/crystal-china/crystal_build_scripts/releases).
 
-## How to use it.
+## How to use it
 
-1.  git clone https://github.com/crystal-china/crystal_build_scripts
-2.  Run `bundle install` then `rake fetch:all`, You can skip this step if you download libraries from github release page instead, and extract it into `PROJECT_ROOT/lib`, as following:
+1. Clone the repository: `git clone https://github.com/crystal-china/crystal_build_scripts`.
+2. In the repository directory, run `bundle install`, followed by `rake fetch:all`. You can skip this step if you download the libraries from the GitHub releases page instead. Extract them so that `PROJECT_ROOT/lib` has the following structure:
 
 ```
  ╰─ $ tree -L1 lib
@@ -21,19 +21,19 @@ lib
 └── x86_64-sonoma
 ```
 
-3. Add `PROJECT_ROOT/bin` into system $PATH, then you can run `sb` script for cross build a Crystal program, you can always use `sb ...` as an alternative of `shards build ...`
+3. Add `PROJECT_ROOT/bin` to your `$PATH`. You can then use `sb` to cross-compile a Crystal program.
 
-4. Entering the Crystal project you want to execute the build on, I use following command for built an AMD64 static binary which can copy into and running it on any linux host.
+4. Go to the Crystal project you want to build. I use the following command to build an AMD64 static binary that I can copy to and run on any AMD64 Linux host:
 
 ```sh
 $: sb --cross-compile --target=x86_64-linux-musl --static --no-debug --link-flags=-s --release
 ```
 
-You can use sb as a alias for `shards build`, but it where take care use zig cc if cross compile.
+You can use `sb` in place of `shards build`; it takes care of using `zig cc` when cross-compiling.
 
 ----------------
 
-Check following example for cross build a binary for `x86_64-linux-musl`, `aarch-linux-musl`，`x86_64-darwin` and `aarch-darwin` on my linux host.
+The following examples show how I cross-compile binaries for `x86_64-linux-musl`, `aarch64-linux-musl`, `x86_64-darwin`, and `aarch64-darwin` on my Linux host.
 
 ```sh
  ╰─ $ sb --cross-compile --target=x86_64-linux-musl --static
@@ -85,11 +85,11 @@ You can use `sb --target=arm64-mac` instead.
 
 -----------
 
- I have been using this workflow for a long time, and it work quite well, so i don't want add unnecessary complexity for same purpose, don't misunderstand me, i use docker quite well, but I use it only necessary.
- 
-## Current supported lib (alpine package name/macOS package name)
+I've been using this workflow for a long time, and it works well for me. I don't want to add unnecessary complexity to achieve the same result. I'm comfortable with Docker too; I just prefer to use it only when I need it.
 
-- gc-dev/gdw-gc
+## Currently supported libraries (Alpine package name / macOS package name)
+
+- gc-dev/bdw-gc
 - gmp-dev/gmp
 - pcre2-dev/pcre2
 - libevent-static/libevent
@@ -102,82 +102,84 @@ You can use `sb --target=arm64-mac` instead.
 - xz-static/xz (used by libxml2)
 - gnu-libiconv/libiconv (used only for macOS)
 
-If you use other third-party libraries, please feel free to submit an issue.
+If you need support for other third-party libraries, feel free to open an issue.
 
-## Update libraries version
+## Updating library versions
 
-### Steps to update libraries version for alpine:
+### Updating libraries for Alpine
 
-1. Visit https://dl-cdn.alpinelinux.org/alpine/v3.20/main/aarch64/ use browser, and find out the latest package name, e.g. gc-dev-8.2.6-r0.apk
-2. run `./scripts/alpine_sha256_gen gc-dev-8.2.6-r0.apk' in the terminal, it will output like following:
+1. Open the package directory for the Alpine release you want to use in your browser, and find the latest package filename. For example, the output below uses `gc-dev-8.2.12-r0.apk` from https://dl-cdn.alpinelinux.org/alpine/v3.24/main
+2. Run `./scripts/alpine_sha256_gen gc-dev-8.2.12-r0.apk` in your terminal. The output will look like this:
 
 ```sh
- ╰─ $ ./scripts/alpine_sha256_gen gc-dev-8.2.6-r0.apk
---2024-08-18 16:27:08--  https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.20/main/aarch64/gc-dev-8.2.6-r0.apk
+ ╰──➤ $ scripts/alpine_sha256_gen gc-static-8.2.12-r0.apk
+--2026-10-02 14:27:58--  https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/aarch64/gc-static-8.2.12-r0.apk
 Loaded CA certificate '/etc/ssl/certs/ca-certificates.crt'
 Resolving mirrors.tuna.tsinghua.edu.cn (mirrors.tuna.tsinghua.edu.cn)... 2402:f000:1:400::2, 101.6.15.130
 Connecting to mirrors.tuna.tsinghua.edu.cn (mirrors.tuna.tsinghua.edu.cn)|2402:f000:1:400::2|:443... connected.
 HTTP request sent, awaiting response... 200 OK
-Length: 538608 (526K) [application/octet-stream]
-Saving to: ‘/tmp/gc-dev-8.2.6-r0.apk.aarch64’
+Length: 478041 (467K) [application/octet-stream]
+Saving to: ‘/tmp/gc-static-8.2.12-r0.apk.aarch64’
 
-/tmp/gc-dev-8.2.6-r0.apk.aarc 100%[===============================================>] 525.98K   987KB/s    in 0.5s
+/tmp/gc-static-8.2.12-r0.apk.aarc 100%[============================================================>] 466.84K  1.49MB/s    in 0.3s
 
-2024-08-18 16:27:09 (987 KB/s) - ‘/tmp/gc-dev-8.2.6-r0.apk.aarch64’ saved [538608/538608]
+2026-10-02 14:27:58 (1.49 MB/s) - ‘/tmp/gc-static-8.2.12-r0.apk.aarch64’ saved [478041/478041]
 
---2024-08-18 16:27:09--  https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.20/main/x86_64/gc-dev-8.2.6-r0.apk
+--2026-10-02 14:27:58--  https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/gc-static-8.2.12-r0.apk
 Loaded CA certificate '/etc/ssl/certs/ca-certificates.crt'
 Resolving mirrors.tuna.tsinghua.edu.cn (mirrors.tuna.tsinghua.edu.cn)... 2402:f000:1:400::2, 101.6.15.130
 Connecting to mirrors.tuna.tsinghua.edu.cn (mirrors.tuna.tsinghua.edu.cn)|2402:f000:1:400::2|:443... connected.
 HTTP request sent, awaiting response... 200 OK
-Length: 546905 (534K) [application/octet-stream]
-Saving to: ‘/tmp/gc-dev-8.2.6-r0.apk.x86_64’
+Length: 484181 (473K) [application/octet-stream]
+Saving to: ‘/tmp/gc-static-8.2.12-r0.apk.x86_64’
 
-/tmp/gc-dev-8.2.6-r0.apk.x86_ 100%[===============================================>] 534.09K  1.06MB/s    in 0.5s
+/tmp/gc-static-8.2.12-r0.apk.x86_ 100%[============================================================>] 472.83K  2.05MB/s    in 0.2s
 
-2024-08-18 16:27:10 (1.06 MB/s) - ‘/tmp/gc-dev-8.2.6-r0.apk.x86_64’ saved [546905/546905]
+2026-10-02 14:27:59 (2.05 MB/s) - ‘/tmp/gc-static-8.2.12-r0.apk.x86_64’ saved [484181/484181]
 
-url: https://dl-cdn.alpinelinux.org/alpine/v3.20/main/aarch64/gc-dev-8.2.6-r0.apk
-sha256: "6a2eec3ee1117941e25549a044f4d8db8bfc9fe3083db767e50b50c7100e6770"
-url: https://dl-cdn.alpinelinux.org/alpine/v3.20/main/x86_64/gc-dev-8.2.6-r0.apk
-sha256: "b9d32564cd61897c56b3d57eb8cf573f9f38bd591f75f74d5b20bceddaaf94f2"
+    - platform: aarch64-linux-musl
+      url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/aarch64/gc-static-8.2.12-r0.apk
+      sha256: "bd52c9a0c74f54e7bf1992fc84221d4223969469fad996cc0cc160808c06e0aa"
+    - platform: x86_64-linux-musl
+      url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/gc-static-8.2.12-r0.apk
+      sha256: "c8f2dc4491237014595585a01b3219701215d44100bc90e2d4d6cba931367d28"
 ```
 
-Then override specified yaml section use the above url,sha256 output part.
+Then copy the last part into the corresponding entries in `libs.yml`.
 
-3. you probably need replace alpine version with latest version before running `alpine_sha256_gen`,current use alpine v3.20, except gmp, 6.3.0 still not work for now, i create a [issue](https://github.com/ziglang/zig/issues/21112) for tracing it.
+3. Before running `alpine_sha256_gen`, make sure the Alpine version in the script matches the release you want to use. The example above uses Alpine v3.24. Alpine's prebuilt GMP 6.3.0 library still does not work with this cross-compilation workflow; I opened an [issue](https://github.com/ziglang/zig/issues/21112) to track it.
 
-### Steps to update libraries version For Darwin:
+### Updating libraries for Darwin (macOS)
 
-1. Visit https://github.com/Homebrew/homebrew-core/tree/master/Formula
-2. Typing t, then filter with the package name(probably use different name with alpine, 
-   e.g. for `gc` library, need search file `bdw-gc.rb`), check `homebrew formulae` 
-   in libs.yml for correct file name.
-3. Check the `bottle do` block. Select the oldest macOS code name supported by
-   both x86_64/aarch64 across all selected libraries. Currently we use Sonoma
+1. Visit https://github.com/Homebrew/homebrew-core/tree/master/Formula.
+2. Press `t` and search for the package name. Homebrew names may differ from
+   Alpine names: for example, the `gc` library uses `bdw-gc.rb`. Check the
+   `homebrew formulae` comments in `libs.yml` for the correct formula name.
+3. Check the `bottle do` block. Select the oldest macOS release supported by
+   both x86_64 and aarch64 across all selected libraries. Currently, we use Sonoma
    (`arm64_sonoma` for aarch64 and `sonoma` for x86_64). If the current formula
-   has no Intel macOS bottle, use the last formula revision that provides both
+   has no Intel macOS bottle, use the most recent formula revision that provides both
    architectures; the pinned formula links are recorded in `libs.yml`.
-4. Update both the GHCR blob URL and `sha256`, and set `darwin_version` to the
-   bottle package version, including any Homebrew revision suffix (e.g. `10.47_1`).
-   Keep the Alpine `version` separate. If the macOS code name changes, update
+4. Update the GHCR blob URL and `sha256`, and set `darwin_version` to the
+   bottle's package version, including any Homebrew revision suffix (e.g. `10.47_1`).
+   Keep the Alpine `version` separate. If the selected macOS release changes, update
    the platform names in `libs.yml` and the library directory mappings in `bin/sb`.
-5. iconv is necessary only for Darwin, you don't need update it for alpine.
-6. Darwin ICU entries intentionally use stubs: the selected libxml2 bottles
+5. iconv is only needed for Darwin, so you don't need to update it for Alpine.
+6. The Darwin ICU entries intentionally use stubs because the selected libxml2 bottles
    do not depend on ICU. libxml2 bottles provide `libxml2.16.dylib` and
    `libxml2.dylib`; the Alpine package still provides `libxml2.a`.
 
 ## How it works
 
-Check [use_zig_cc_as_an_alternative_linker](docs/use_zig_cc_as_an_alternative_linker.md)
+See [Using Zig CC as an alternative linker](use_zig_cc_as_an_alternative_linker.md).
 
 ## Contributing
 
-1. Fork it (<https://github.com/crystal-china/hashr/fork>)
+1. [Fork the repository](https://github.com/crystal-china/crystal_build_scripts/fork).
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
-5. Create a new Pull Request
+5. Open a pull request.
 
 ## Contributors
 
