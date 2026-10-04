@@ -21,14 +21,14 @@ describe HaversackTasks do
     FileUtils.mkdir_p(File.dirname(archive))
     Process.run("tar", ["-czf", archive, "-C", File.join(SPEC_ROOT, "input"), "usr"]).success?.should be_true
     source = HaversackTasks::Source.new("http://example.test/bottle.tar.gz", HaversackTasks.digest(archive))
-    library = HaversackTasks::Library.new("test", "1", ["libtest.a"], {"x86_64-sonoma" => HaversackTasks::Binary.new("fetch", source)})
+    library = HaversackTasks::Library.new("test-static", "test", "1", "1", ["libtest.a"], {"x86_64-sonoma" => HaversackTasks::Binary.new("fetch", source)})
 
     HaversackTasks.fetch(library, "x86_64-sonoma")
     output = File.join(SPEC_ROOT, "prebuilt_libs", "x86_64-sonoma", "libtest.a")
     File.info(output).permissions.owner_write?.should be_true
     HaversackTasks.fetch(library, "x86_64-sonoma")
     File.info(output).permissions.owner_write?.should be_true
-    expanded = HaversackTasks::Library.new("test", "1", ["libtest.a", "libsecond.a"], {"x86_64-sonoma" => HaversackTasks::Binary.new("fetch", source)})
+    expanded = HaversackTasks::Library.new("test-static", "test", "1", "1", ["libtest.a", "libsecond.a"], {"x86_64-sonoma" => HaversackTasks::Binary.new("fetch", source)})
     HaversackTasks.fetch(expanded, "x86_64-sonoma")
     File.read(File.join(SPEC_ROOT, "prebuilt_libs", "x86_64-sonoma", "libsecond.a")).should eq("second library")
   end
@@ -114,7 +114,7 @@ describe HaversackTasks do
     end
   end
 
-  it "packages libraries under the renamed directory and keeps Shards dependencies during clean" do
+  it "extracts the package without stripping directories and keeps Shards dependencies during clean" do
     library = File.join(SPEC_ROOT, "prebuilt_libs", "x86_64-linux-musl", "libtest.a")
     FileUtils.mkdir_p(File.dirname(library))
     File.write(library, "test library")
@@ -122,13 +122,23 @@ describe HaversackTasks do
     FileUtils.mkdir_p(File.dirname(shard))
     File.write(shard, "name: croupier")
 
-    library_config = HaversackTasks::Library.new("test", "1", ["libtest.a"], {"x86_64-linux-musl" => HaversackTasks::Binary.new("fetch", nil)})
+    library_config = HaversackTasks::Library.new("test-static", "test", "1", "1", ["libtest.a"], {"x86_64-linux-musl" => HaversackTasks::Binary.new("fetch", nil)})
     HaversackTasks.package(["x86_64-linux-musl"], [library_config])
     archive = File.join(SPEC_ROOT, "pkg", "libs-0.6.1.tar.xz")
+    staging = File.join(SPEC_ROOT, "pkg", "libs-0.6.1")
+    File.exists?(staging).should be_false
+    FileUtils.mkdir_p(staging)
+    File.write(File.join(staging, "stale"), "stale")
+    HaversackTasks.package(["x86_64-linux-musl"], [library_config])
+    File.exists?(staging).should be_false
     listing = IO::Memory.new
     status = Process.run("tar", ["-tf", archive], output: listing)
     status.success?.should be_true
-    listing.to_s.should contain("libs-0.6.1/prebuilt_libs/x86_64-linux-musl/libtest.a")
+    listing.to_s.should contain("prebuilt_libs/x86_64-linux-musl/libtest.a")
+    unpacked = File.join(SPEC_ROOT, "unpacked")
+    FileUtils.mkdir_p(unpacked)
+    Process.run("tar", ["-xJf", archive, "-C", unpacked]).success?.should be_true
+    File.read(File.join(unpacked, "prebuilt_libs", "x86_64-linux-musl", "libtest.a")).should eq("test library")
 
     File.write(archive, "damaged package")
     HaversackTasks.package(["x86_64-linux-musl"], [library_config])
@@ -148,8 +158,8 @@ describe HaversackTasks do
 
   it "defaults to fetch, reads named build tasks, and omits unused platforms" do
     File.write(File.join(SPEC_ROOT, "libs.yml"), <<-YAML)
-    - name: gmp
-      version: "6.3.0"
+    - alpine_package: gmp
+      alpine_version: "6.3.0"
       source:
         url: https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz
         sha256: #{"a" * 64}
@@ -157,8 +167,8 @@ describe HaversackTasks do
       binaries:
         - platform: x86_64-linux-musl
           action: gmp:build:x86_64-linux-musl
-    - name: iconv
-      version: "1.19"
+    - homebrew_formula: libiconv
+      homebrew_version: "1.19"
       files: [libiconv.a]
       binaries:
         - platform: x86_64-sonoma
@@ -166,19 +176,25 @@ describe HaversackTasks do
           sha256: #{"b" * 64}
     YAML
     libraries = HaversackTasks.read_libraries
-    libraries.first.version.should eq("6.3.0")
+    libraries.first.alpine_version.should eq("6.3.0")
+    libraries.first.homebrew_version.should be_nil
+    libraries.last.alpine_version.should be_nil
+    libraries.last.homebrew_version.should eq("1.19")
     libraries.first.source.not_nil!.sha256.should eq("a" * 64)
     libraries.first.binaries["x86_64-linux-musl"].action.should eq("gmp:build:x86_64-linux-musl")
     libraries.last.binaries.has_key?("x86_64-linux-musl").should be_false
     libraries.last.binaries["x86_64-sonoma"].action.should eq("fetch")
     libraries.last.binaries["x86_64-sonoma"].source.not_nil!.sha256.should eq("b" * 64)
+    HaversackTasks.package_name(libraries.first, "x86_64-linux-musl").should eq("gmp")
+    HaversackTasks.package_name(libraries.last, "x86_64-sonoma").should eq("libiconv")
+    HaversackTasks.package_version(libraries.last, "x86_64-sonoma").should eq("1.19")
   end
 
   it "restores a checked GMP build from downloads after clean and ignores a different version" do
     platform = "x86_64-linux-musl"
     source = HaversackTasks::Source.new("https://example.test/gmp-6.3.0.tar.xz", "a" * 64)
     binary = HaversackTasks::Binary.new("gmp:build:#{platform}", nil)
-    library = HaversackTasks::Library.new("gmp", "6.3.0", ["libgmp.a"], {platform => binary}, source)
+    library = HaversackTasks::Library.new("gmp", "gmp", "6.3.0", "6.3.0", ["libgmp.a"], {platform => binary}, source)
     cache = File.join(SPEC_ROOT, "downloads", "built", platform, "gmp-6.3.0")
     FileUtils.mkdir_p(cache)
     cached_library = File.join(cache, "libgmp.a")
@@ -197,7 +213,7 @@ describe HaversackTasks do
     HaversackTasks.clean
     HaversackTasks.build_gmp(library, platform)
     File.read(output).should eq("built library")
-    changed = HaversackTasks::Library.new("gmp", "6.3.1", ["libgmp.a"], {platform => binary}, source)
+    changed = HaversackTasks::Library.new("gmp", "gmp", "6.3.1", "6.3.0", ["libgmp.a"], {platform => binary}, source)
     HaversackTasks.gmp_cache_signature(changed, platform).should_not eq(HaversackTasks.gmp_cache_signature(library, platform))
   end
 
@@ -209,8 +225,8 @@ describe HaversackTasks do
     File.write(File.join(output, "libiconv.a"), "stale")
     fetch = HaversackTasks::Binary.new("fetch", nil)
     libraries = [
-      HaversackTasks::Library.new("test", "1", ["libtest.a"], {platform => fetch}),
-      HaversackTasks::Library.new("iconv", "1", ["libiconv.a"], {"x86_64-sonoma" => fetch}),
+      HaversackTasks::Library.new("test-static", "test", "1", "1", ["libtest.a"], {platform => fetch}),
+      HaversackTasks::Library.new(nil, "libiconv", nil, "1", ["libiconv.a"], {"x86_64-sonoma" => fetch}),
     ]
     HaversackTasks.package([platform], libraries)
     listing = IO::Memory.new

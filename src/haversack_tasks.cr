@@ -16,7 +16,7 @@ module HaversackTasks
 
   record Source, url : String, sha256 : String
   record Binary, action : String, source : Source?
-  record Library, name : String, version : String, files : Array(String), binaries : Hash(String, Binary), source : Source? = nil
+  record Library, alpine_package : String?, homebrew_formula : String?, alpine_version : String?, homebrew_version : String?, files : Array(String), binaries : Hash(String, Binary), source : Source? = nil
 
   class DownloadFailure < Exception
     getter retryable : Bool
@@ -31,11 +31,32 @@ module HaversackTasks
     File.join(ROOT, *parts)
   end
 
+  def self.package_name(library : Library, platform : String) : String
+    if platform.ends_with?("-linux-musl")
+      library.alpine_package || raise "Missing alpine_package for #{platform}"
+    else
+      library.homebrew_formula || raise "Missing homebrew_formula for #{platform}"
+    end
+  end
+
+  def self.package_version(library : Library, platform : String) : String
+    if platform.ends_with?("-linux-musl")
+      library.alpine_version || raise "Missing alpine_version for #{platform}"
+    else
+      library.homebrew_version || raise "Missing homebrew_version for #{platform}"
+    end
+  end
+
   def self.read_libraries : Array(Library)
     YAML.parse(File.read(path("libs.yml"))).as_a.map do |entry|
       row = entry.as_h
-      name = row["name"].as_s
-      version = row["version"].as_s
+      alpine_package = row["alpine_package"]?.try(&.as_s)
+      homebrew_formula = row["homebrew_formula"]?.try(&.as_s)
+      alpine_version = row["alpine_version"]?.try(&.as_s)
+      homebrew_version = row["homebrew_version"]?.try(&.as_s)
+      raise "libs.yml: alpine_package and alpine_version must be set together" unless alpine_package.nil? == alpine_version.nil?
+      raise "libs.yml: homebrew_formula and homebrew_version must be set together" unless homebrew_formula.nil? == homebrew_version.nil?
+      raise "libs.yml: missing package name" unless alpine_package || homebrew_formula
       files = row["files"].as_a.map(&.as_s)
       source = if source_row = row["source"]?
                  source_data = source_row.as_h
@@ -51,10 +72,15 @@ module HaversackTasks
         when "fetch"
           binary_source = Source.new(binary["url"].as_s, binary["sha256"].as_s)
         end
+        name = if platform.ends_with?("-linux-musl")
+                 alpine_package || raise "Missing alpine_package for #{platform}"
+               else
+                 homebrew_formula || raise "Missing homebrew_formula for #{platform}"
+               end
         raise "#{name} for #{platform}: #{action} cannot have a URL" if action != "fetch" && (binary.has_key?("url") || binary.has_key?("sha256"))
         binaries[platform] = Binary.new(action, binary_source)
       end
-      Library.new(name, version, files, binaries, source)
+      Library.new(alpine_package, homebrew_formula, alpine_version, homebrew_version, files, binaries, source)
     end
   end
 
@@ -157,7 +183,8 @@ module HaversackTasks
   end
 
   def self.fetch(library : Library, platform : String) : Nil
-    source = library.binaries[platform].source || raise "#{library.name} for #{platform}: missing download source"
+    name = package_name(library, platform)
+    source = library.binaries[platform].source || raise "#{name} for #{platform}: missing download source"
     archive_dir = path("downloads", platform, "archives")
     basename = File.basename(URI.parse(source.url).path.not_nil!)
     raise "Unsafe archive name: #{basename}" if basename.empty? || basename == "." || basename == ".."
@@ -165,7 +192,7 @@ module HaversackTasks
     download(source, archive)
 
     output_dir = path("prebuilt_libs", platform)
-    marker = path("tmp", ".extract-#{platform}-#{library.name}-#{library.version}.yml")
+    marker = path("tmp", ".extract-#{platform}-#{name}-#{package_version(library, platform)}.yml")
     signature = Digest::SHA256.hexdigest(([source.sha256] + library.files).join("\n"))
     if File.file?(marker)
       begin
@@ -181,7 +208,7 @@ module HaversackTasks
       end
     end
 
-    staging = path("tmp", "extract-#{platform}-#{library.name}-#{Process.pid}")
+    staging = path("tmp", "extract-#{platform}-#{name}-#{Process.pid}")
     FileUtils.rm_rf(staging)
     FileUtils.mkdir_p(staging)
     begin
@@ -189,7 +216,7 @@ module HaversackTasks
       selected = Dir.glob("#{staging}/**/*").select do |file|
         library.files.includes?(File.basename(file)) && File.file?(file)
       end
-      raise "#{library.name} for #{platform}: none of #{library.files.join(", ")} found" if selected.empty?
+      raise "#{name} for #{platform}: none of #{library.files.join(", ")} found" if selected.empty?
       FileUtils.mkdir_p(output_dir)
       FileUtils.mkdir_p(File.join(output_dir, "pkgconfig"))
       hashes = {} of String => String
@@ -212,14 +239,16 @@ module HaversackTasks
     root = path("prebuilt_libs")
     files = platforms.flat_map do |platform|
       allowed = libraries.select { |library| library.binaries.has_key?(platform) }.flat_map(&.files).to_set
-      allowed << "gmp.pc" if libraries.any? { |library| library.name == "gmp" && library.binaries[platform]?.try(&.action) == "gmp:build:#{platform}" }
+      allowed << "gmp.pc" if libraries.any? { |library| library.alpine_package == "gmp" && library.binaries[platform]?.try(&.action) == "gmp:build:#{platform}" }
       Dir.glob(File.join(root, platform, "**", "*")).select { |file| File.file?(file) && allowed.includes?(File.basename(file)) }
     end.sort
     raise "No libraries to package" if files.empty?
     signature = files.map { |file| "#{file.sub(ROOT + "/", "")}:#{digest(file)}" }.join("\n")
-    signature_hash = Digest::SHA256.hexdigest(signature)
+    signature_hash = Digest::SHA256.hexdigest("prebuilt_libs-root\n#{signature}")
     archive = path("pkg", "libs-#{VERSION}.tar.xz")
     marker = path("tmp", ".package.yml")
+    staging_root = path("pkg", "libs-#{VERSION}")
+    FileUtils.rm_rf(staging_root)
     if !force && File.file?(archive) && File.file?(marker)
       begin
         cache = YAML.parse(File.read(marker)).as_h
@@ -229,33 +258,32 @@ module HaversackTasks
       end
     end
 
-    staging_root = path("pkg", "libs-#{VERSION}")
-    FileUtils.rm_rf(staging_root)
-    files.each do |file|
-      relative = file.sub(ROOT + "/", "")
-      destination = File.join(staging_root, relative)
-      FileUtils.mkdir_p(File.dirname(destination))
-      File.copy(file, destination)
-    end
     temporary = "#{archive}.part"
     begin
-      run("tar", ["-cJf", temporary, "-C", path("pkg"), File.basename(staging_root)])
+      files.each do |file|
+        relative = file.sub(ROOT + "/", "")
+        destination = File.join(staging_root, relative)
+        FileUtils.mkdir_p(File.dirname(destination))
+        File.copy(file, destination)
+      end
+      run("tar", ["-cJf", temporary, "-C", staging_root, "prebuilt_libs"])
       File.rename(temporary, archive)
       FileUtils.mkdir_p(File.dirname(marker))
       File.write(marker, {"signature" => signature_hash, "archive_sha256" => digest(archive)}.to_yaml)
     ensure
       File.delete(temporary) if File.exists?(temporary)
+      FileUtils.rm_rf(staging_root)
     end
   end
 
   def self.gmp_cache_signature(library : Library, platform : String) : String
     source = library.source || raise "GMP source is missing from libs.yml"
-    "#{library.version}:#{source.url}:#{source.sha256}:#{platform}:zig-cc-O3-fno-lto-static-pic-v1"
+    "#{package_version(library, platform)}:#{source.url}:#{source.sha256}:#{platform}:zig-cc-O3-fno-lto-static-pic-v1"
   end
 
   def self.build_gmp(library : Library, platform : String, force : Bool = false) : Nil
     source = library.source || raise "GMP source is missing from libs.yml"
-    version = library.version
+    version = package_version(library, platform)
     source_archive = path("downloads", "sources", "gmp-#{version}.tar.xz")
     source_dir = path("tmp", "gmp-#{version}")
     build_dir = path("tmp", "gmp-build-#{platform}")
@@ -354,18 +382,21 @@ module HaversackTasks
     libraries = read_libraries
     platforms = libraries.flat_map(&.binaries.keys).uniq
     tasks = [] of String
-    gmp = libraries.find { |library| library.name == "gmp" } || raise "GMP is missing from libs.yml"
+    task_versions = {} of String => String
+    gmp = libraries.find { |library| library.alpine_package == "gmp" } || raise "GMP is missing from libs.yml"
     gmp.binaries.each do |platform, binary|
       id = "gmp:build:#{platform}"
       next unless binary.action == id
       raise "#{id}: only Linux musl targets are supported" unless platform.ends_with?("-linux-musl")
       tasks << id
+      task_versions[id] = package_version(gmp, platform)
       Croupier::Task.new(id: id, always_run: true) do
         build_gmp(gmp, platform)
         [] of String
       end
       rebuild_id = "gmp:rebuild:#{platform}"
       tasks << rebuild_id
+      task_versions[rebuild_id] = package_version(gmp, platform)
       Croupier::Task.new(id: rebuild_id, always_run: true) do
         build_gmp(gmp, platform, force: true)
         [] of String
@@ -373,23 +404,26 @@ module HaversackTasks
     end
     libraries.each do |library|
       library.binaries.each do |platform, binary|
-        id = "fetch:#{platform}:#{library.name}"
-        tasks << id
-        if binary.action == "fetch"
-          Croupier::Task.new(id: id, always_run: true) do
-            fetch(library, platform)
-            [] of String
-          end
-        else
+        id = "fetch:#{platform}:#{package_name(library, platform)}"
+        if binary.action != "fetch"
           raise "#{id}: unknown action task #{binary.action}" unless tasks.includes?(binary.action)
-          Croupier::Task.new(id: id, inputs: [binary.action], always_run: true) { [] of String }
+          next
+        end
+        tasks << id
+        task_versions[id] = package_version(library, platform)
+        Croupier::Task.new(id: id, always_run: true) do
+          fetch(library, platform)
+          [] of String
         end
       end
     end
     platforms.each do |platform|
       id = "fetch:#{platform}"
       tasks << id
-      inputs = libraries.select(&.binaries.has_key?(platform)).map { |library| "#{id}:#{library.name}" }
+      inputs = libraries.select(&.binaries.has_key?(platform)).map do |library|
+        binary = library.binaries[platform]
+        binary.action == "fetch" ? "#{id}:#{package_name(library, platform)}" : binary.action
+      end
       Croupier::Task.new(id: id, inputs: inputs, always_run: true) { [] of String }
     end
     tasks << "all"
@@ -399,7 +433,7 @@ module HaversackTasks
     target = args.first? || "help"
     if {"help", "-h", "--help", "-T", "--tasks"}.includes?(target)
       puts "Usage: bin/tasks <task>"
-      puts "all"
+      puts "all # Fetch all libraries and build Linux GMP"
       descriptions = {
         "clean"           => "Remove prebuilt_libs and tmp; keep downloads and pkg",
         "clobber"         => "Remove prebuilt_libs, tmp, downloads, and pkg",
@@ -408,7 +442,12 @@ module HaversackTasks
         "repackage"       => "Run all, then recreate the pkg archive",
       }
       tasks.sort.each do |task|
-        puts task unless task == "all" || descriptions.has_key?(task)
+        next if task == "all" || descriptions.has_key?(task)
+        if version = task_versions[task]?
+          puts "#{task} # #{version}"
+        else
+          puts task
+        end
       end
       descriptions.each do |task, description|
         puts "#{task} # #{description}"

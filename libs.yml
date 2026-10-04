@@ -2,11 +2,10 @@
 # mirrors: https://mirrors.tuna.tsinghua.edu.cn/alpine
 
 ---
-- name: gc
-  version: "8.2.12-r0"
-  darwin_version: "8.2.12"
-  # alpine package: gc-static
-  # homebrew formulae: bdw-gc
+- alpine_package: gc-static
+  alpine_version: "8.2.12-r0"
+  homebrew_formula: bdw-gc
+  homebrew_version: "8.2.12"
   files:
     - libgc.a
   binaries:
@@ -23,14 +22,14 @@
       url: https://ghcr.io/v2/homebrew/core/bdw-gc/blobs/sha256:0bbf5a3924c6e7ffcdca91a2d3bd2569d918ae0c97ac7cc5caaa948dc881d106
       sha256: "0bbf5a3924c6e7ffcdca91a2d3bd2569d918ae0c97ac7cc5caaa948dc881d106"
 
-- name: gmp
-  version: "6.3.0"
-  darwin_version: "6.3.0"
+- alpine_package: gmp
+  alpine_version: "6.3.0"
+  homebrew_formula: gmp
+  homebrew_version: "6.3.0"
   # Linux GMP is built from source without LTO; no Alpine binary is downloaded.
   source:
     url: https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz
     sha256: "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898"
-  # homebrew formulae: gmp
   # Pinned formula with ARM64 and Intel macOS bottles:
   # https://github.com/Homebrew/homebrew-core/blob/a69e3084b8552a079e740b9a8f4c8db179620a77/Formula/g/gmp.rb
   files:
@@ -47,11 +46,10 @@
       url: https://ghcr.io/v2/homebrew/core/gmp/blobs/sha256:e8410d92339535174e9f4a5eccc403301b70c7287f2f9a87f064a9aa2e21b54b
       sha256: "e8410d92339535174e9f4a5eccc403301b70c7287f2f9a87f064a9aa2e21b54b"
 
-- name: pcre2
-  version: "10.49-r0"
-  darwin_version: "10.47_1"
-  # alpine package: pcre2-static
-  # homebrew formulae: pcre2
+- alpine_package: pcre2-static
+  alpine_version: "10.49-r0"
+  homebrew_formula: pcre2
+  homebrew_version: "10.47_1"
   # Pinned formula with ARM64 and Intel macOS bottles:
   # https://github.com/Homebrew/homebrew-core/blob/ee08cc645fb0b30f321b12db839a4854259790bb/Formula/p/pcre2.rb
   files:
@@ -70,11 +68,10 @@
       url: https://ghcr.io/v2/homebrew/core/pcre2/blobs/sha256:72691a0ed5b0ec4d21641ee33aa00fad05e6e8ddbfa417fe27f4cd26521ed24a
       sha256: "72691a0ed5b0ec4d21641ee33aa00fad05e6e8ddbfa417fe27f4cd26521ed24a"
 
-- name: openssl
-  version: "3.5.9-r0"
-  darwin_version: "3.6.3"
-  # alpine package: openssl-libs-static
-  # homebrew formulae: openssl@3
+- alpine_package: openssl-libs-static
+  alpine_version: "3.5.9-r0"
+  homebrew_formula: openssl@3
+  homebrew_version: "3.6.3"
   # Pinned formula with ARM64 and Intel macOS bottles:
   # https://github.com/Homebrew/homebrew-core/blob/ac0bc95fef0e5aed25b3662f6271020410cfbc3d/Formula/o/openssl@3.rb
   files:
@@ -94,11 +91,10 @@
       url: https://ghcr.io/v2/homebrew/core/openssl/3/blobs/sha256:756b4206f7032468825c0494ec46cc519666be06d40f068d68f20ad229a01681
       sha256: "756b4206f7032468825c0494ec46cc519666be06d40f068d68f20ad229a01681"
 
-- name: sqlite
-  version: "3.53.4-r0"
-  darwin_version: "3.53.4"
-  # alpine package: sqlite-static
-  # homebrew formulae: sqlite
+- alpine_package: sqlite-static
+  alpine_version: "3.53.4-r0"
+  homebrew_formula: sqlite
+  homebrew_version: "3.53.4"
   files:
     - libsqlite3.a
   binaries:
@@ -115,11 +111,10 @@
       url: https://ghcr.io/v2/homebrew/core/sqlite/blobs/sha256:32f6a117203a602fe3e06f524c19e431965ecc0bf9ede4c11ab443551558cfe9
       sha256: "32f6a117203a602fe3e06f524c19e431965ecc0bf9ede4c11ab443551558cfe9"
 
-- name: yaml
-  version: "0.2.5-r2"
-  darwin_version: "0.2.5"
-  # alpine package: yaml-static
-  # homebrew formulae: libyaml
+- alpine_package: yaml-static
+  alpine_version: "0.2.5-r2"
+  homebrew_formula: libyaml
+  homebrew_version: "0.2.5"
   files:
     - libyaml.a
   binaries:
@@ -136,11 +131,10 @@
       url: https://ghcr.io/v2/homebrew/core/libyaml/blobs/sha256:4d6e02ce3a82b60033bc7e55bef841dcfef0c05c051176d96accb50744136c6d
       sha256: "4d6e02ce3a82b60033bc7e55bef841dcfef0c05c051176d96accb50744136c6d"
 
-- name: zlib
-  version: "1.3.2-r0"
-  darwin_version: "1.3.2"
-  # alpine package: zlib-static
-  # homebrew formulae: zlib
+- alpine_package: zlib-static
+  alpine_version: "1.3.2-r0"
+  homebrew_formula: zlib
+  homebrew_version: "1.3.2"
   files:
     - libz.a
   binaries:
@@ -157,11 +151,10 @@
       url: https://ghcr.io/v2/homebrew/core/zlib/blobs/sha256:14940211b29d719bcabe03e43d7c06086c9c436c391c5b33f273763c3110f8e4
       sha256: "14940211b29d719bcabe03e43d7c06086c9c436c391c5b33f273763c3110f8e4"
 
-- name: libxml2
-  version: "2.13.9-r2"
-  darwin_version: "2.15.3"
-  # alpine package: libxml2-static
-  # homebrew formulae: libxml2
+- alpine_package: libxml2-static
+  alpine_version: "2.13.9-r2"
+  homebrew_formula: libxml2
+  homebrew_version: "2.15.3"
   # Pinned formula with ARM64 and Intel macOS bottles:
   # https://github.com/Homebrew/homebrew-core/blob/f2b17dabfa4fb9e5ed75804b5d515faedfed9518/Formula/lib/libxml2.rb
   files:
@@ -182,13 +175,8 @@
       url: https://ghcr.io/v2/homebrew/core/libxml2/blobs/sha256:c39f8567f5d228ab173ab8c467b65cae0b85f7da07d8cd8984597d5e3caeafd3
       sha256: "c39f8567f5d228ab173ab8c467b65cae0b85f7da07d8cd8984597d5e3caeafd3"
 
-- name: xz
-  version: "5.8.4-r0"
-  darwin_version: "5.8.3"
-  # alpine package: xz-static
-  # homebrew formulae: xz
-  # Pinned formula with ARM64 and Intel macOS bottles:
-  # https://github.com/Homebrew/homebrew-core/blob/3e79661f1e8b06e03247ec7c17b5919c6dc01f16/Formula/x/xz.rb
+- alpine_package: xz-static
+  alpine_version: "5.8.4-r0"
   files:
     - liblzma.a
   binaries:
@@ -199,12 +187,9 @@
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/xz-static-5.8.4-r0.apk
       sha256: "da87145dfef2ef86c35d63e1a28cf5920e0b5c26f2e7245ecc7b62c3f1f18aba"
 
-- name: iconv
-  version: "1.18-r0"
-  darwin_version: "1.19"
+- homebrew_formula: libiconv
+  homebrew_version: "1.19"
   # iconv is only needed when built for Darwin.
-  # alpine package: gnu-libiconv-dev
-  # homebrew formulae: libiconv
   files:
     - libiconv.a
   binaries:
