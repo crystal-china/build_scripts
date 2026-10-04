@@ -124,8 +124,8 @@ describe HaversackTasks do
 
     library_config = HaversackTasks::Library.new("test-static", "test", "1", "1", ["libtest.a"], {"x86_64-linux-musl" => HaversackTasks::Binary.new("fetch", nil)})
     HaversackTasks.package(["x86_64-linux-musl"], [library_config])
-    archive = File.join(SPEC_ROOT, "pkg", "libs-#{HaversackTasks::VERSION}.tar.xz")
-    staging = File.join(SPEC_ROOT, "pkg", "libs-#{HaversackTasks::VERSION}")
+    archive = File.join(SPEC_ROOT, "pkg", "prebuilt_libs-#{HaversackTasks::VERSION}.tar.xz")
+    staging = File.join(SPEC_ROOT, "pkg", "prebuilt_libs-#{HaversackTasks::VERSION}")
     File.exists?(staging).should be_false
     FileUtils.mkdir_p(staging)
     File.write(File.join(staging, "stale"), "stale")
@@ -230,7 +230,7 @@ describe HaversackTasks do
     ]
     HaversackTasks.package([platform], libraries)
     listing = IO::Memory.new
-    Process.run("tar", ["-tf", File.join(SPEC_ROOT, "pkg", "libs-#{HaversackTasks::VERSION}.tar.xz")], output: listing).success?.should be_true
+    Process.run("tar", ["-tf", File.join(SPEC_ROOT, "pkg", "prebuilt_libs-#{HaversackTasks::VERSION}.tar.xz")], output: listing).success?.should be_true
     listing.to_s.should contain("libtest.a")
     listing.to_s.should_not contain("libiconv.a")
   end

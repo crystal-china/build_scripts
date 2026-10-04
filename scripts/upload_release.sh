@@ -10,7 +10,7 @@ if [ -z "$last_tag" ]; then
   exit 1
 fi
 
-set -- pkg/libs-*.tar.xz
+set -- pkg/prebuilt_libs-*.tar.xz
 if [ ! -f "$1" ]; then
   echo "No package found in pkg; run bin/tasks package first." >&2
   exit 1

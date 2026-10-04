@@ -245,9 +245,9 @@ module HaversackTasks
     raise "No libraries to package" if files.empty?
     signature = files.map { |file| "#{file.sub(ROOT + "/", "")}:#{digest(file)}" }.join("\n")
     signature_hash = Digest::SHA256.hexdigest("prebuilt_libs-root\n#{signature}")
-    archive = path("pkg", "libs-#{VERSION}.tar.xz")
+    archive = path("pkg", "prebuilt_libs-#{VERSION}.tar.xz")
     marker = path("tmp", ".package.yml")
-    staging_root = path("pkg", "libs-#{VERSION}")
+    staging_root = path("pkg", "prebuilt_libs-#{VERSION}")
     FileUtils.rm_rf(staging_root)
     if !force && File.file?(archive) && File.file?(marker)
       begin

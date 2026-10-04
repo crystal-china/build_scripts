@@ -45,7 +45,7 @@ jobs:
       - name: release
         uses: softprops/action-gh-release@v1
         with:
-          files: pkg/libs-*.tar.xz
+          files: pkg/prebuilt_libs-*.tar.xz
 
       - name: save downloads in cache
         id: cache-download-sav

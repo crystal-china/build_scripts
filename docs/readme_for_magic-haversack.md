@@ -87,8 +87,8 @@ bin/tasks all handles this automatically and reuses cached builds when the versi
 For macOS, we use the prebuilt Homebrew bottles.
 
 I also upload the libraries as assets on the [releases page](https://github.com/crystal-china/crystal_build_scripts/releases).
-You can skip run tasks if you download the `libs-{version}.tar.xz` from the GitHub releases page instead.
-then run `tar -xJf libs-0.6.1.tar.xz` from the repository root.
+You can skip run tasks if you download the `prebuilt_libs-{version}.tar.xz` from the GitHub releases page instead.
+then run `tar -xJf prebuilt_libs-0.7.0.tar.xz` from the repository root.
 
 ```
  ╰──➤ $ cd build_scripts/
