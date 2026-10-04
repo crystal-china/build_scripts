@@ -212,25 +212,6 @@
       url: https://ghcr.io/v2/homebrew/core/libxml2/blobs/sha256:c39f8567f5d228ab173ab8c467b65cae0b85f7da07d8cd8984597d5e3caeafd3
       sha256: "c39f8567f5d228ab173ab8c467b65cae0b85f7da07d8cd8984597d5e3caeafd3"
 
-# - name: icu
-#   version: "78.1-r0"
-#   # Darwin does not need ICU: the selected libxml2 bottles do not depend on it.
-#   # alpine package: icu-static
-#   # homebrew formulae: icu4c
-#   files:
-#     - libicuuc.a
-#     - libicudata.a
-#     - libicui18n.a
-#   binaries:
-#     - platform: aarch64-linux-musl
-#       action: fetch
-#       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/aarch64/icu-static-78.1-r0.apk
-#       sha256: "26a552713c4f25ab0300466fb8c7b842c433b83d1789f5b72e2714705e851f61"
-#     - platform: x86_64-linux-musl
-#       action: fetch
-#       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/icu-static-78.1-r0.apk
-#       sha256: "3fdb05b4ea4c4e9cdb81a7858238748b63616ecaba1799f858a6904cb0a9ab9e"
-
 - name: xz
   version: "5.8.4-r0"
   darwin_version: "5.8.3"
