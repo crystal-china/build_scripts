@@ -7,7 +7,7 @@ require "yaml"
 
 module HaversackTasks
   ROOT              = ENV["HAVERSACK_ROOT"]? || File.expand_path("..", __DIR__)
-  VERSION           = "0.6.1"
+  VERSION           =  {{ `shards version "#{__DIR__}"`.chomp.stringify }}
   GMP_SOURCE_MIRROR = "https://ftp.gnu.org/gnu/gmp/"
   GMP_SOURCE_BACKUP = "https://gmplib.org/download/gmp/"
   ALPINE_MIRROR     = "https://mirrors.tuna.tsinghua.edu.cn/alpine/"
