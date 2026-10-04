@@ -160,6 +160,12 @@ if echo "$*" |grep -F -qs -e '--target='; then
 
     read -r targetname libname <<< "${mapping[$cr_target]}"
 
+    if [[ "$targetname" =~ -linux-musl$ ]]; then
+        xml2_extra=" -llzma"
+    else
+        xml2_extra=""
+    fi
+
     if [[ "$targetname" =~ -macos-none ]]; then
         build_args="$* -Duse_libiconv"
     else
@@ -178,13 +184,13 @@ if echo "$*" |grep -F -qs -e '--target='; then
     ${build_command} build ${build_args} |tee $tmpfile
 
     if cc_output=$(cat "$tmpfile" |grep '^cc '); then
-        lib_path="${SCRIPT_PARENT}/lib/${libname}"
+        lib_path="${SCRIPT_PARENT}/prebuilt_libs/${libname}"
 
         echo "$cc_output" |
             sed "s#^cc#zig cc -target ${targetname}#" | # replace "cc" with "zig cc --target ???"
             sed "s#-L[^ ]*#-L${lib_path}#" | # Where to find static libraries.
             sed "s#.*#& -lunwind#" |        # Add -lunwind is necessary for Crystal backtrace feature.
-            sed "s#-lxml2#-lxml2 -llzma#" | # Support built with libxml2
+            sed "s#-lxml2#-lxml2${xml2_extra}#" | # Alpine's static libxml2 needs liblzma.
             tee $tmpfile && bash $tmpfile
     else
         echo "$build_output"

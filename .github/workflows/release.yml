@@ -13,32 +13,43 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: ruby/setup-ruby@v1
+      - uses: crystal-lang/install-crystal@v1
         with:
-          ruby-version: '3.2'
-          bundler-cache: true
+          crystal: '1.21'
+
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: '0.16.0'
+
+      - name: install LLVM tools
+        run: sudo apt-get update && sudo apt-get install -y llvm
+
+      - name: install Crystal dependencies
+        run: shards install --frozen
+
+      - name: build tasks
+        run: shards build
 
       - name: restore cached downloads
         id: cache-download-restore
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: downloads
-          key: ${{ runner.os }}-downloads
+          key: ${{ runner.os }}-downloads-${{ hashFiles('libs.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-downloads-
 
-      - name: fetch all packages
-        run: bundle exec rake fetch:all
-
-      - name: generate package
-        run: bundle exec rake package
+      - name: fetch libraries and generate package
+        run: bin/tasks package
 
       - name: release
         uses: softprops/action-gh-release@v1
         with:
-          files: pkg/*.tar.xz
+          files: pkg/libs-*.tar.xz
 
       - name: save downloads in cache
         id: cache-download-sav
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         with:
           path: downloads
           key: ${{ steps.cache-download-restore.outputs.cache-primary-key }}

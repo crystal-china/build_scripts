@@ -11,22 +11,29 @@
     - libgc.a
   binaries:
     - platform: aarch64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/aarch64/gc-static-8.2.12-r0.apk
       sha256: "bd52c9a0c74f54e7bf1992fc84221d4223969469fad996cc0cc160808c06e0aa"
     - platform: x86_64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/gc-static-8.2.12-r0.apk
       sha256: "c8f2dc4491237014595585a01b3219701215d44100bc90e2d4d6cba931367d28"
     - platform: aarch64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/bdw-gc/blobs/sha256:353aac395e4812b85c6afcf7e22ae333bfa672737aff93dc68eef3a81feb4ebd
       sha256: "353aac395e4812b85c6afcf7e22ae333bfa672737aff93dc68eef3a81feb4ebd"
     - platform: x86_64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/bdw-gc/blobs/sha256:0bbf5a3924c6e7ffcdca91a2d3bd2569d918ae0c97ac7cc5caaa948dc881d106
       sha256: "0bbf5a3924c6e7ffcdca91a2d3bd2569d918ae0c97ac7cc5caaa948dc881d106"
 
 - name: gmp
-  version: "6.3.0-r4"
+  version: "6.3.0"
   darwin_version: "6.3.0"
-  # alpine package: gmp-static
+  # Linux GMP is built from source without LTO; no Alpine binary is downloaded.
+  source:
+    url: https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz
+    sha256: "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898"
   # homebrew formulae: gmp
   # Pinned formula with ARM64 and Intel macOS bottles:
   # https://github.com/Homebrew/homebrew-core/blob/a69e3084b8552a079e740b9a8f4c8db179620a77/Formula/g/gmp.rb
@@ -34,15 +41,15 @@
     - libgmp.a
   binaries:
     - platform: aarch64-linux-musl
-      url: https://github.com/crystal-china/crystal_build_scripts/raw/not_download_dev_package/stubs.tar.gz
-      sha256: "18e737e5fc8f142bf5cfcba98639dba40f5203191fe6b3fe93883e6b55fd132f"
+      action: build
     - platform: x86_64-linux-musl
-      url: https://github.com/crystal-china/crystal_build_scripts/raw/not_download_dev_package/stubs.tar.gz
-      sha256: "18e737e5fc8f142bf5cfcba98639dba40f5203191fe6b3fe93883e6b55fd132f"
+      action: build
     - platform: aarch64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/gmp/blobs/sha256:78e4f40cba6419cf7e2d81e9c945d1e93744511bd5230bdfac1b69ed894914b4
       sha256: "78e4f40cba6419cf7e2d81e9c945d1e93744511bd5230bdfac1b69ed894914b4"
     - platform: x86_64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/gmp/blobs/sha256:e8410d92339535174e9f4a5eccc403301b70c7287f2f9a87f064a9aa2e21b54b
       sha256: "e8410d92339535174e9f4a5eccc403301b70c7287f2f9a87f064a9aa2e21b54b"
 
@@ -57,15 +64,19 @@
     - libpcre2-8.a
   binaries:
     - platform: aarch64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/aarch64/pcre2-static-10.49-r0.apk
       sha256: "4b183fe83073e1de9c94c38c775650c5d1060af34451443e64d8f90bb6c92a02"
     - platform: x86_64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/pcre2-static-10.49-r0.apk
       sha256: "1a0fefb8441d9a08d1bd140649830c0a3391f0a74fbbf258377cd63f2c70c885"
     - platform: aarch64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/pcre2/blobs/sha256:f6d184fa59de4ca2f3115cb661f113c6c25ced2247b4e169dd99389c0d58be3f
       sha256: "f6d184fa59de4ca2f3115cb661f113c6c25ced2247b4e169dd99389c0d58be3f"
     - platform: x86_64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/pcre2/blobs/sha256:72691a0ed5b0ec4d21641ee33aa00fad05e6e8ddbfa417fe27f4cd26521ed24a
       sha256: "72691a0ed5b0ec4d21641ee33aa00fad05e6e8ddbfa417fe27f4cd26521ed24a"
 
@@ -81,15 +92,19 @@
     - libssl.a
   binaries:
     - platform: aarch64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/aarch64/openssl-libs-static-3.5.9-r0.apk
       sha256: "e7719f2ca54762e53884493eb0e5b129102e2cabb6c30c7d59bcf0c11f666946"
     - platform: x86_64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/openssl-libs-static-3.5.9-r0.apk
       sha256: "1ff255d219f15604deb5b37d8bc55eacd3f722aa406ea036f241ed49bd586060"
     - platform: aarch64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/openssl/3/blobs/sha256:bcc920ec4b157ba2fb001ef3e701ea35beb860814f21414a9af8d95ad9af4b27
       sha256: "bcc920ec4b157ba2fb001ef3e701ea35beb860814f21414a9af8d95ad9af4b27"
     - platform: x86_64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/openssl/3/blobs/sha256:756b4206f7032468825c0494ec46cc519666be06d40f068d68f20ad229a01681
       sha256: "756b4206f7032468825c0494ec46cc519666be06d40f068d68f20ad229a01681"
 
@@ -102,15 +117,19 @@
     - libsqlite3.a
   binaries:
     - platform: aarch64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/aarch64/sqlite-static-3.53.4-r0.apk
       sha256: "576d3b95d41ba4da9c2a95980f01b3f64f68e2f2bd659e29bde4b79ea8163c34"
     - platform: x86_64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/sqlite-static-3.53.4-r0.apk
       sha256: "83d2dabbda8e65d76d6c8d7486996891a1fde7e8053289d58aeb5f7d917b63ae"
     - platform: aarch64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/sqlite/blobs/sha256:45049bbdee244bc9d91e22c36629b5ba93b719b52c4d121b86392b3410be630f
       sha256: "45049bbdee244bc9d91e22c36629b5ba93b719b52c4d121b86392b3410be630f"
     - platform: x86_64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/sqlite/blobs/sha256:32f6a117203a602fe3e06f524c19e431965ecc0bf9ede4c11ab443551558cfe9
       sha256: "32f6a117203a602fe3e06f524c19e431965ecc0bf9ede4c11ab443551558cfe9"
 
@@ -123,15 +142,19 @@
     - libyaml.a
   binaries:
     - platform: aarch64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.22/main/aarch64/yaml-static-0.2.5-r2.apk
       sha256: "2d0bf2adbbc76b9e73bc9e8eadf3f835bcea6ef0bebd1d9c3160c81252dd4f92"
     - platform: x86_64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.22/main/x86_64/yaml-static-0.2.5-r2.apk
       sha256: "eefcf8dc02c3a1f71e95d90125b00a1fa11fae6544dbe52a4e3a9121ec50ac61"
     - platform: aarch64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/libyaml/blobs/sha256:98c0cf81bcdf7577d5fdc8cc18732970b9ae7e0e7423a733f88f0f566ba483ad
       sha256: "98c0cf81bcdf7577d5fdc8cc18732970b9ae7e0e7423a733f88f0f566ba483ad"
     - platform: x86_64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/libyaml/blobs/sha256:4d6e02ce3a82b60033bc7e55bef841dcfef0c05c051176d96accb50744136c6d
       sha256: "4d6e02ce3a82b60033bc7e55bef841dcfef0c05c051176d96accb50744136c6d"
 
@@ -144,15 +167,19 @@
     - libz.a
   binaries:
     - platform: aarch64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.23/main/aarch64/zlib-static-1.3.2-r0.apk
       sha256: "d8c7937969955b1d1ef28b3a5417a883c334e461246824322dfab5c4a539df67"
     - platform: x86_64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.23/main/x86_64/zlib-static-1.3.2-r0.apk
       sha256: "fedef0452563afabe69c7e6707cce759c764b0cd200fac43a4509858ce47ba01"
     - platform: aarch64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/zlib/blobs/sha256:ca032109db39a64b5eeb8d90a179c7d873f2de3f8b298f9546430d7b8cddc09f
       sha256: "ca032109db39a64b5eeb8d90a179c7d873f2de3f8b298f9546430d7b8cddc09f"
     - platform: x86_64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/zlib/blobs/sha256:14940211b29d719bcabe03e43d7c06086c9c436c391c5b33f273763c3110f8e4
       sha256: "14940211b29d719bcabe03e43d7c06086c9c436c391c5b33f273763c3110f8e4"
 
@@ -169,41 +196,44 @@
     - libxml2.dylib
   binaries:
     - platform: aarch64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/aarch64/libxml2-static-2.13.9-r2.apk
       sha256: "49114ee24b85ea83e19bdece3789e1ab9a7dce13b046bccf8cb797ecce4a49ff"
     - platform: x86_64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/libxml2-static-2.13.9-r2.apk
       sha256: "61fcffcc2b7126e6bf79cf355923abcb7cf3349f0c4ed8950b51c4d2af387ff7"
     - platform: aarch64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/libxml2/blobs/sha256:e8105aa3d75882944ac86f34a3feec34075ec774c58f1d30848e1f6addc2499a
       sha256: "e8105aa3d75882944ac86f34a3feec34075ec774c58f1d30848e1f6addc2499a"
     - platform: x86_64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/libxml2/blobs/sha256:c39f8567f5d228ab173ab8c467b65cae0b85f7da07d8cd8984597d5e3caeafd3
       sha256: "c39f8567f5d228ab173ab8c467b65cae0b85f7da07d8cd8984597d5e3caeafd3"
 
-# TODO: leave this comment for now, maybe need add it back when some issue happen.
-- name: icu
-  version: "78.1-r0"
-  # Darwin uses a stub: the selected libxml2 bottles do not depend on ICU.
-  # alpine package: icu-static
-  # homebrew formulae: icu4c
-  files:
-    - libicuuc.a
-    - libicudata.a
-    - icui18n.a
-  binaries:
-    - platform: aarch64-linux-musl
-      url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/aarch64/icu-static-78.1-r0.apk
-      sha256: "26a552713c4f25ab0300466fb8c7b842c433b83d1789f5b72e2714705e851f61"
-    - platform: x86_64-linux-musl
-      url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/icu-static-78.1-r0.apk
-      sha256: "3fdb05b4ea4c4e9cdb81a7858238748b63616ecaba1799f858a6904cb0a9ab9e"
-    - platform: aarch64-sonoma
-      url: https://github.com/crystal-china/crystal_build_scripts/raw/not_download_dev_package/stubs.tar.gz
-      sha256: "18e737e5fc8f142bf5cfcba98639dba40f5203191fe6b3fe93883e6b55fd132f"
-    - platform: x86_64-sonoma
-      url: https://github.com/crystal-china/crystal_build_scripts/raw/not_download_dev_package/stubs.tar.gz
-      sha256: "18e737e5fc8f142bf5cfcba98639dba40f5203191fe6b3fe93883e6b55fd132f"
+# - name: icu
+#   version: "78.1-r0"
+#   # Darwin does not need ICU: the selected libxml2 bottles do not depend on it.
+#   # alpine package: icu-static
+#   # homebrew formulae: icu4c
+#   files:
+#     - libicuuc.a
+#     - libicudata.a
+#     - libicui18n.a
+#   binaries:
+#     - platform: aarch64-linux-musl
+#       action: fetch
+#       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/aarch64/icu-static-78.1-r0.apk
+#       sha256: "26a552713c4f25ab0300466fb8c7b842c433b83d1789f5b72e2714705e851f61"
+#     - platform: x86_64-linux-musl
+#       action: fetch
+#       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/icu-static-78.1-r0.apk
+#       sha256: "3fdb05b4ea4c4e9cdb81a7858238748b63616ecaba1799f858a6904cb0a9ab9e"
+#     - platform: aarch64-sonoma
+#       action: noop
+#     - platform: x86_64-sonoma
+#       action: noop
 
 - name: xz
   version: "5.8.4-r0"
@@ -216,36 +246,36 @@
     - liblzma.a
   binaries:
     - platform: aarch64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/aarch64/xz-static-5.8.4-r0.apk
       sha256: "f215ff6fb01d101753b9b05c54f0ed2b3d5223364a5507d815b3fc8b9f009434"
     - platform: x86_64-linux-musl
+      action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/xz-static-5.8.4-r0.apk
       sha256: "da87145dfef2ef86c35d63e1a28cf5920e0b5c26f2e7245ecc7b62c3f1f18aba"
     - platform: aarch64-sonoma
-      url: https://ghcr.io/v2/homebrew/core/xz/blobs/sha256:0a6e40dbeea3358a1277f347ef9b892070096a79a81cda90edfedbfe721c4ba3
-      sha256: "0a6e40dbeea3358a1277f347ef9b892070096a79a81cda90edfedbfe721c4ba3"
+      action: noop
     - platform: x86_64-sonoma
-      url: https://ghcr.io/v2/homebrew/core/xz/blobs/sha256:fcd2df6962b5b94ef14232d02df71ee0b329482c2d8478942e07287f016ebe73
-      sha256: "fcd2df6962b5b94ef14232d02df71ee0b329482c2d8478942e07287f016ebe73"
+      action: noop
 
 - name: iconv
   version: "1.18-r0"
   darwin_version: "1.19"
+  # iconv is only needed when built for Darwin.
   # alpine package: gnu-libiconv-dev
   # homebrew formulae: libiconv
   files:
     - libiconv.a
   binaries:
     - platform: aarch64-linux-musl
-      url: https://github.com/crystal-china/crystal_build_scripts/raw/not_download_dev_package/stubs.tar.gz
-      sha256: "18e737e5fc8f142bf5cfcba98639dba40f5203191fe6b3fe93883e6b55fd132f"
+      action: noop
     - platform: x86_64-linux-musl
-      url: https://github.com/crystal-china/crystal_build_scripts/raw/not_download_dev_package/stubs.tar.gz
-      sha256: "18e737e5fc8f142bf5cfcba98639dba40f5203191fe6b3fe93883e6b55fd132f"
-      # iconv only needed when built for darwin
+      action: noop
     - platform: aarch64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/libiconv/blobs/sha256:319e71654138da2d8ffee7a0b9041b3bdaa89297b4ae0a2adab72d445cf63dfe
       sha256: "319e71654138da2d8ffee7a0b9041b3bdaa89297b4ae0a2adab72d445cf63dfe"
     - platform: x86_64-sonoma
+      action: fetch
       url: https://ghcr.io/v2/homebrew/core/libiconv/blobs/sha256:dc9389c9b302277e146eb4a22bb575df3bdf70d9bf82051904781192e9ef86d9
       sha256: "dc9389c9b302277e146eb4a22bb575df3bdf70d9bf82051904781192e9ef86d9"

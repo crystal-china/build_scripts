@@ -1,6 +1,9 @@
 downloads/
 lib/
+prebuilt_libs/
 pkg/
 tmp/
 lib.tar.gz
 bin/build_flags.conf
+bin/tasks
+lib.working
