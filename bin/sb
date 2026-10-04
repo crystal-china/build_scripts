@@ -186,6 +186,7 @@ if echo "$*" |grep -F -qs -e '--target='; then
     if cc_output=$(cat "$tmpfile" |grep '^cc '); then
         lib_path="${SCRIPT_PARENT}/prebuilt_libs/${libname}"
 
+        printf '\n'
         echo "$cc_output" |
             sed "s#^cc#zig cc -target ${targetname}#" | # replace "cc" with "zig cc --target ???"
             sed "s#-L[^ ]*#-L${lib_path}#" | # Where to find static libraries.
