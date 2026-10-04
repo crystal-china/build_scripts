@@ -301,6 +301,8 @@ gc-dev
 
 ### Step 2. Prepare dependency libraries file.
 
+The Rake commands and `lib/` paths in this historical walkthrough describe the older version of this repository. The current Crystal tasks use `bin/tasks` and place the extracted libraries in `prebuilt_libs/`; see [the current instructions](readme_for_magic-haversack.md).
+
 You can download both of them from https://dl-cdn.alpinelinux.org/alpine/v3.18/main/aarch64/, but thanks @@luislavena again, There is a [ruby gem](https://github.com/luislavena/magic-haversack) help us for this.
 
 You need config ruby correctly to use this tool.
@@ -586,5 +588,4 @@ There are some other concerns:
 
 1. The llvm version used by the Crystal compiler not matched with static libraries(e.g. libgc-dev)?
 2. build windows binary? it should be possible, as the `hello.exe` showcase.
-
 

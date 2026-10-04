@@ -2,114 +2,205 @@
 
 On Linux, most of these tools are already available, though you may need to install the Zig compiler.
 
-- Bash (version > 4.0)
-- sed
-- Zig compiler
-- Ruby (optional): only needed if you want to fetch the libraries yourself. I also upload the libraries as assets on the [releases page](https://github.com/crystal-china/crystal_build_scripts/releases).
+- `bash` (version > 4.0)
+- `sed`
+- `zig` compiler
+- `tar` with xz support for extracting and packaging the libraries
+- `make` `gcc` `m4` `llvm`, which build the Linux GMP libraries.
+  `gcc` provides `cc`; `llvm` provides the three `llvm-*` tools. GMP uses `m4` to preprocess assembly files.
+- `crystal` and `shards` (optional): only needed if you want to fetch/build the libraries yourself.
 
 ## How to use it
 
-1. Clone the repository: `git clone https://github.com/crystal-china/crystal_build_scripts`.
-2. In the repository directory, run `bundle install`, followed by `rake fetch:all`. You can skip this step if you download the libraries from the GitHub releases page instead. Extract them so that `PROJECT_ROOT/lib` has the following structure:
+1. `git clone https://github.com/crystal-china/crystal_build_scripts`.
+2. `shards install`
+3. `shards build`
+4. `bin/tasks all`, it's also builds the non-LTO GMP libraries for both Linux targets.
+
+Following is the all tasks available.
+
+```bash
+ ╰──➤ $ bin/tasks
+Usage: bin/tasks <task>
+all # Fetch all libraries and build Linux GMP
+fetch:aarch64-linux-musl
+fetch:aarch64-linux-musl:gc-static # 8.2.12-r0
+fetch:aarch64-linux-musl:libxml2-static # 2.13.9-r2
+fetch:aarch64-linux-musl:openssl-libs-static # 3.5.9-r0
+fetch:aarch64-linux-musl:pcre2-static # 10.49-r0
+fetch:aarch64-linux-musl:sqlite-static # 3.53.4-r0
+fetch:aarch64-linux-musl:xz-static # 5.8.4-r0
+fetch:aarch64-linux-musl:yaml-static # 0.2.5-r2
+fetch:aarch64-linux-musl:zlib-static # 1.3.2-r0
+fetch:aarch64-sonoma
+fetch:aarch64-sonoma:bdw-gc # 8.2.12
+fetch:aarch64-sonoma:gmp # 6.3.0
+fetch:aarch64-sonoma:libiconv # 1.19
+fetch:aarch64-sonoma:libxml2 # 2.15.3
+fetch:aarch64-sonoma:libyaml # 0.2.5
+fetch:aarch64-sonoma:openssl@3 # 3.6.3
+fetch:aarch64-sonoma:pcre2 # 10.47_1
+fetch:aarch64-sonoma:sqlite # 3.53.4
+fetch:aarch64-sonoma:zlib # 1.3.2
+fetch:x86_64-linux-musl
+fetch:x86_64-linux-musl:gc-static # 8.2.12-r0
+fetch:x86_64-linux-musl:libxml2-static # 2.13.9-r2
+fetch:x86_64-linux-musl:openssl-libs-static # 3.5.9-r0
+fetch:x86_64-linux-musl:pcre2-static # 10.49-r0
+fetch:x86_64-linux-musl:sqlite-static # 3.53.4-r0
+fetch:x86_64-linux-musl:xz-static # 5.8.4-r0
+fetch:x86_64-linux-musl:yaml-static # 0.2.5-r2
+fetch:x86_64-linux-musl:zlib-static # 1.3.2-r0
+fetch:x86_64-sonoma
+fetch:x86_64-sonoma:bdw-gc # 8.2.12
+fetch:x86_64-sonoma:gmp # 6.3.0
+fetch:x86_64-sonoma:libiconv # 1.19
+fetch:x86_64-sonoma:libxml2 # 2.15.3
+fetch:x86_64-sonoma:libyaml # 0.2.5
+fetch:x86_64-sonoma:openssl@3 # 3.6.3
+fetch:x86_64-sonoma:pcre2 # 10.47_1
+fetch:x86_64-sonoma:sqlite # 3.53.4
+fetch:x86_64-sonoma:zlib # 1.3.2
+gmp:build:aarch64-linux-musl # 6.3.0
+gmp:build:x86_64-linux-musl # 6.3.0
+gmp:rebuild:aarch64-linux-musl # 6.3.0
+gmp:rebuild:x86_64-linux-musl # 6.3.0
+clean # Remove prebuilt_libs and tmp; keep downloads and pkg
+clobber # Remove prebuilt_libs, tmp, downloads, and pkg
+clobber_package # Remove pkg and its cache marker
+package # Run all, then create the pkg archive if needed
+repackage # Run all, then recreate the pkg archive
+```
+
+Above also print the supported libraries and version, feel free to open an issue
+if you need support for other third-party libraries.
+
+
+### Why build GMP from source
+
+We build GMP from source for both Alpine targets (aarch64-linux-musl and x86_64-linux-musl) to avoid the undefined-symbol errors encountered when linking Alpine’s prebuilt GMP 6.3.0 archive with  zig cc.
+
+The build uses `zig cc with -O3  -fno-lto` to produce a compatible static libgmp.a. 
+
+bin/tasks all handles this automatically and reuses cached builds when the version and build inputs remain unchanged. 
+
+For macOS, we use the prebuilt Homebrew bottles.
+
+I also upload the libraries as assets on the [releases page](https://github.com/crystal-china/crystal_build_scripts/releases).
+You can skip run tasks if you download the `libs-{version}.tar.xz` from the GitHub releases page instead.
+then run `tar -xJf libs-0.6.1.tar.xz` from the repository root.
 
 ```
- ╰─ $ tree -L1 lib
-lib
+ ╰──➤ $ cd build_scripts/
+
+ ╰──➤ $ tree -L1 prebuilt_libs/
+prebuilt_libs/
 ├── aarch64-linux-musl
 ├── aarch64-sonoma
 ├── x86_64-linux-musl
 └── x86_64-sonoma
+
+5 directories, 0 files
 ```
 
-3. Add `PROJECT_ROOT/bin` to your `$PATH`. You can then use `sb` to cross-compile a Crystal program.
+3. Add `PROJECT_ROOT/bin` to your `$PATH`. You can then use `sb` or `cb` to cross-compile a Crystal program.
 
-4. Go to the Crystal project you want to build. I use the following command to build an AMD64 static binary that I can copy to and run on any AMD64 Linux host:
+4. build an AMD64/ARM64 static binary, with no debug info, strip symbols, and use release mode.
 
 ```sh
-$: sb --cross-compile --target=x86_64-linux-musl --static --no-debug --link-flags=-s --release
+$: sb --target=amd64 --no-debug --link-flags=-s --release
+$: sb --target=arm64 --no-debug --link-flags=-s --release
 ```
 
-You can use `sb` in place of `shards build`; it takes care of using `zig cc` when cross-compiling.
+> **Alpine static builds:** Do **not** pass Crystal's `--static` for either `x86_64-linux-musl` or `aarch64-linux-musl`. In this workflow, `zig cc` already links a static musl binary. `--static` makes Crystal ask the build host's `pkg-config` for extra static dependencies, which may not match the Alpine libraries in `prebuilt_libs`.
+
+In fact, You can use `sb` in place of `shards build` when do cross compile directly
+it takes care of using `zig cc` when cross-compiling.
+
+To build a `.cr` file directly, use `cb` instead of `crystal build` instead. 
+
+It uses the same setup as `sb`:
+
+```sh
+$: cb --target=arm64 hello.cr -o bin/hello
+```
 
 ----------------
 
 The following examples show how I cross-compile binaries for `x86_64-linux-musl`, `aarch64-linux-musl`, `x86_64-darwin`, and `aarch64-darwin` on my Linux host.
 
 ```sh
- ╰─ $ sb --cross-compile --target=x86_64-linux-musl --static
-zig cc -target x86_64-linux-musl bin/college.o -o bin/college  -rdynamic -static -L/home/zw963/Crystal/crystal-china/crystal_build_scripts/lib/x86_64-linux-musl -lgmp -lyaml -lz `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libssl || printf %s '-lssl -lcrypto'` `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libcrypto || printf %s '-lcrypto'` -lpcre2-8 -lgc -lpthread -ldl -levent -lunwind
+ ╰──➤ $ sb --cross-compile --target=x86_64-linux-musl
+CRYSTAL_WORKERS=
+args=   --target=x86_64-linux-musl --cross-compile
+I: Dependencies are satisfied
+I: Building: tasks
+cc /home/zw963/Crystal/crystal-china/build_scripts/bin/tasks.o -o /home/zw963/Crystal/crystal-china/build_scripts/bin/tasks  -rdynamic -fuse-ld=mold -L/home/zw963/Crystal/bin/../lib/crystal -lz `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libssl || printf %s '-lssl -lcrypto'` `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libcrypto || printf %s '-lcrypto'` -lyaml -lpcre2-8 -lgc -lpthread -ldl
+zig cc -target x86_64-linux-musl /home/zw963/Crystal/crystal-china/build_scripts/bin/tasks.o -o /home/zw963/Crystal/crystal-china/build_scripts/bin/tasks  -rdynamic -fuse-ld=mold -L/home/zw963/Crystal/crystal-china/build_scripts/prebuilt_libs/x86_64-linux-musl -lz `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libssl || printf %s '-lssl -lcrypto'` `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libcrypto || printf %s '-lcrypto'` -lyaml -lpcre2-8 -lgc -lpthread -ldl -lunwind
 
- ╰─ $ file bin/college
-bin/college: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), static-pie linked, with debug_info, not stripped
+ ╰──➤ $ file bin/tasks
+bin/tasks: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, with debug_info, not stripped
 ```
 
-You can use `sb --target=amd64` instead.
+Above command same as `sb --target=amd64`
 
 -------------
 
-```sh
+Following is several useful commands:
 
- ╰─ $ sb --cross-compile --target=aarch64-linux-musl --static
-zig cc -target aarch64-linux-musl bin/college.o -o bin/college  -rdynamic -static -L/home/zw963/Crystal/crystal-china/crystal_build_scripts/lib/aarch64-linux-musl -lgmp -lyaml -lz `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libssl || printf %s '-lssl -lcrypto'` `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libcrypto || printf %s '-lcrypto'` -lpcre2-8 -lgc -lpthread -ldl -levent -lunwind
+```bash
+sb --cross-compile --target=aarch64-linux-musl # sb --target=amd64-mac
 
- ╰─ $ file bin/college
-bin/college: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), static-pie linked, with debug_info, not stripped
+sb --cross-compile --target=x86_64-darwin  # sb --target=amd64-mac
+
+sb --cross-compile --target=aarch64-darwin # sb --target=arm64-mac
 ```
 
-You can use `sb --target=arm64` instead.
+I've been using this workflow for a long time, and it works well for me.
+I don't want to add unnecessary complexity to achieve the same result.
+I'm comfortable with docker/podman too; I just prefer to use it only when I need it.
 
--------------
+### Running a Crystal program that uses XML on macOS
 
-```sh
- ╰─ $ sb --cross-compile --target=x86_64-darwin --static
-zig cc -target x86_64-macos-none bin/college.o -o bin/college  -rdynamic -static -L/home/zw963/Crystal/crystal-china/crystal_build_scripts/lib/x86_64-sonoma -lgmp -lyaml -lz `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libssl || printf %s '-lssl -lcrypto'` `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libcrypto || printf %s '-lcrypto'` -lpcre2-8 -lgc -lpthread -ldl -levent -liconv -lunwind
+The macOS libxml2 bottle provides a dynamic library. Linking a Crystal program
+with `require "xml"` succeeds on Linux, but the resulting macOS executable also
+needs that library at runtime; even `--static` does not change this.
 
-  ╰─ $ file bin/college
-bin/college: Mach-O 64-bit x86_64 executable, flags:<NOUNDEFS|DYLDLINK|TWOLEVEL|NO_REEXPORTED_DYLIBS|PIE|HAS_TLV_DESCRIPTORS>
+For example, from this repository's root, build the [XML example](../examples/mac_xml_hello.cr) for an Apple Silicon Mac:
+
+```shz
+bin/cb --target=arm64-mac examples/mac_xml_hello.cr -o mac_xml_hello_arm64
 ```
 
-You can use `sb --target=amd64-mac` instead.
-
-------------
+Copy `mac_xml_hello_arm64` and `prebuilt_libs/aarch64-sonoma/libxml2.16.dylib` to the same directory on the Mac.
+Then run:
 
 ```sh
-
- ╰─ $ sb --cross-compile --target=aarch64-darwin --static
-zig cc -target aarch64-macos-none bin/college.o -o bin/college  -rdynamic -static -L/home/zw963/Crystal/crystal-china/crystal_build_scripts/lib/aarch64-sonoma -lgmp -lyaml -lz `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libssl || printf %s '-lssl -lcrypto'` `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libcrypto || printf %s '-lcrypto'` -lpcre2-8 -lgc -lpthread -ldl -levent -liconv -lunwind
-
- ╰─ $ file bin/college
-bin/college: Mach-O 64-bit arm64 executable, flags:<NOUNDEFS|DYLDLINK|TWOLEVEL|NO_REEXPORTED_DYLIBS|PIE|HAS_TLV_DESCRIPTORS>
+cd folder # Or whichever directory contains both files
+DYLD_LIBRARY_PATH="$PWD" ./mac_xml_hello_arm64
 ```
 
-You can use `sb --target=arm64-mac` instead.
-
------------
-
-I've been using this workflow for a long time, and it works well for me. I don't want to add unnecessary complexity to achieve the same result. I'm comfortable with Docker too; I just prefer to use it only when I need it.
-
-## Currently supported libraries (Alpine package name / macOS package name)
-
-- gc-dev/bdw-gc
-- gmp-dev/gmp
-- pcre2-dev/pcre2
-- libevent-static/libevent
-- libsodium-static/libsodium
-- openssl-libs-static/openssl@3
-- sqlite-static/sqlite
-- yaml-static/yaml
-- zlib-static/zlib
-- libxml2-static/libxml2
-- xz-static/xz (used by libxml2)
-- gnu-libiconv/libiconv (used only for macOS)
-
-If you need support for other third-party libraries, feel free to open an issue.
+This prints `macOS XML OK: world` on the tested Apple Silicon Mac.
+`DYLD_LIBRARY_PATH` names the directory containing the dylib, not the dylib
+itself. The Homebrew bottle's embedded libxml2 path still contains
+`@@HOMEBREW_PREFIX@@`; without the environment variable, the copied executable
+failed with `Symbol not found: _xmlFree`.
 
 ## Updating library versions
 
+In `libs.yml`, pair `alpine_package` with `alpine_version` and `homebrew_formula` with `homebrew_version`. 
+
+Omit the unused pair when a library is needed on only for one platform. 
+
+Downloading is the default: include `url` and `sha256`.
+
+To build GMP, set `action` to its task name, such as `gmp:build:aarch64-linux-musl`
+the task uses GMP's top-level `source`.
+
 ### Updating libraries for Alpine
 
-1. Open the package directory for the Alpine release you want to use in your browser, and find the latest package filename. For example, the output below uses `gc-dev-8.2.12-r0.apk` from https://dl-cdn.alpinelinux.org/alpine/v3.24/main
-2. Run `./scripts/alpine_sha256_gen gc-dev-8.2.12-r0.apk` in your terminal. The output will look like this:
+1. Open the package directory for the Alpine release you want to use in your browser, and find the latest package filename. For example, the output below uses `gc-static-8.2.12-r0.apk` from https://dl-cdn.alpinelinux.org/alpine/v3.24/main
+2. Run `./scripts/alpine_sha256_gen gc-static-8.2.12-r0.apk` in your terminal. The output will look like this:
 
 ```sh
  ╰──➤ $ scripts/alpine_sha256_gen gc-static-8.2.12-r0.apk
@@ -147,27 +238,25 @@ Saving to: ‘/tmp/gc-static-8.2.12-r0.apk.x86_64’
 
 Then copy the last part into the corresponding entries in `libs.yml`.
 
-3. Before running `alpine_sha256_gen`, make sure the Alpine version in the script matches the release you want to use. The example above uses Alpine v3.24. Alpine's prebuilt GMP 6.3.0 library still does not work with this cross-compilation workflow; I opened an [issue](https://github.com/ziglang/zig/issues/21112) to track it.
+3. Before running `alpine_sha256_gen`, make sure the Alpine version in the script
+   matches the release you want to use. 
 
 ### Updating libraries for Darwin (macOS)
 
 1. Visit https://github.com/Homebrew/homebrew-core/tree/master/Formula.
 2. Press `t` and search for the package name. Homebrew names may differ from
-   Alpine names: for example, the `gc` library uses `bdw-gc.rb`. Check the
-   `homebrew formulae` comments in `libs.yml` for the correct formula name.
+   Alpine names: for example, `gc-static` uses `bdw-gc.rb`. Check `homebrew_formula`
+   in `libs.yml` for the correct formula name.
 3. Check the `bottle do` block. Select the oldest macOS release supported by
    both x86_64 and aarch64 across all selected libraries. Currently, we use Sonoma
    (`arm64_sonoma` for aarch64 and `sonoma` for x86_64). If the current formula
    has no Intel macOS bottle, use the most recent formula revision that provides both
    architectures; the pinned formula links are recorded in `libs.yml`.
-4. Update the GHCR blob URL and `sha256`, and set `darwin_version` to the
+4. Update the GHCR blob URL and `sha256`, and set `homebrew_version` to the
    bottle's package version, including any Homebrew revision suffix (e.g. `10.47_1`).
-   Keep the Alpine `version` separate. If the selected macOS release changes, update
-   the platform names in `libs.yml` and the library directory mappings in `bin/sb`.
-5. iconv is only needed for Darwin, so you don't need to update it for Alpine.
-6. The Darwin ICU entries intentionally use stubs because the selected libxml2 bottles
-   do not depend on ICU. libxml2 bottles provide `libxml2.16.dylib` and
-   `libxml2.dylib`; the Alpine package still provides `libxml2.a`.
+   Keep the `alpine_version` separate when present. If the selected macOS
+   release changes, update the platform names in `libs.yml` and the library
+   directory mappings in `bin/sb`.
 
 ## How it works
 
