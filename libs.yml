@@ -230,10 +230,6 @@
 #       action: fetch
 #       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/icu-static-78.1-r0.apk
 #       sha256: "3fdb05b4ea4c4e9cdb81a7858238748b63616ecaba1799f858a6904cb0a9ab9e"
-#     - platform: aarch64-sonoma
-#       action: noop
-#     - platform: x86_64-sonoma
-#       action: noop
 
 - name: xz
   version: "5.8.4-r0"
@@ -253,10 +249,6 @@
       action: fetch
       url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/xz-static-5.8.4-r0.apk
       sha256: "da87145dfef2ef86c35d63e1a28cf5920e0b5c26f2e7245ecc7b62c3f1f18aba"
-    - platform: aarch64-sonoma
-      action: noop
-    - platform: x86_64-sonoma
-      action: noop
 
 - name: iconv
   version: "1.18-r0"
@@ -267,10 +259,6 @@
   files:
     - libiconv.a
   binaries:
-    - platform: aarch64-linux-musl
-      action: noop
-    - platform: x86_64-linux-musl
-      action: noop
     - platform: aarch64-sonoma
       action: fetch
       url: https://ghcr.io/v2/homebrew/core/libiconv/blobs/sha256:319e71654138da2d8ffee7a0b9041b3bdaa89297b4ae0a2adab72d445cf63dfe

@@ -52,7 +52,6 @@ module HaversackTasks
           binary_source = Source.new(binary["url"].as_s, binary["sha256"].as_s)
         when "build"
           raise "#{name} for #{platform}: only Linux GMP supports build" unless name == "gmp" && platform.ends_with?("-linux-musl") && source
-        when "noop"
         else
           raise "#{name} for #{platform}: unknown action #{action}"
         end
@@ -216,7 +215,7 @@ module HaversackTasks
   def self.package(platforms : Array(String), libraries : Array(Library), force : Bool = false) : Nil
     root = path("prebuilt_libs")
     files = platforms.flat_map do |platform|
-      allowed = libraries.select { |library| (binary = library.binaries[platform]?) && binary.action != "noop" }.flat_map(&.files).to_set
+      allowed = libraries.select { |library| library.binaries.has_key?(platform) }.flat_map(&.files).to_set
       allowed << "gmp.pc" if libraries.any? { |library| library.name == "gmp" && library.binaries[platform]?.try(&.action) == "build" }
       Dir.glob(File.join(root, platform, "**", "*")).select { |file| File.file?(file) && allowed.includes?(File.basename(file)) }
     end.sort
@@ -367,7 +366,6 @@ module HaversackTasks
           case library.binaries[platform].action
           when "build" then build_gmp(library, platform)
           when "fetch" then fetch(library, platform)
-          when "noop"  then STDERR.puts "Skipping #{library.name} for #{platform}"
           end
           [] of String
         end

@@ -146,7 +146,7 @@ describe HaversackTasks do
     File.exists?(shard).should be_true
   end
 
-  it "reads build and noop actions from libs.yml without placeholder downloads" do
+  it "reads build actions and omits platforms that do not need a library" do
     File.write(File.join(SPEC_ROOT, "libs.yml"), <<-YAML)
     - name: gmp
       version: "6.3.0"
@@ -161,15 +161,17 @@ describe HaversackTasks do
       version: "1.19"
       files: [libiconv.a]
       binaries:
-        - platform: x86_64-linux-musl
-          action: noop
+        - platform: x86_64-sonoma
+          action: fetch
+          url: https://example.test/libiconv.tar.gz
+          sha256: #{"b" * 64}
     YAML
     libraries = HaversackTasks.read_libraries
     libraries.first.version.should eq("6.3.0")
     libraries.first.source.not_nil!.sha256.should eq("a" * 64)
     libraries.first.binaries["x86_64-linux-musl"].action.should eq("build")
-    libraries.last.binaries["x86_64-linux-musl"].action.should eq("noop")
-    libraries.last.binaries["x86_64-linux-musl"].source.should be_nil
+    libraries.last.binaries.has_key?("x86_64-linux-musl").should be_false
+    libraries.last.binaries["x86_64-sonoma"].action.should eq("fetch")
   end
 
   it "restores a checked GMP build from downloads after clean and ignores a different version" do
@@ -199,17 +201,16 @@ describe HaversackTasks do
     HaversackTasks.gmp_cache_signature(changed, platform).should_not eq(HaversackTasks.gmp_cache_signature(library, platform))
   end
 
-  it "excludes files for noop platforms from the package" do
+  it "excludes files for omitted platforms from the package" do
     platform = "x86_64-linux-musl"
     output = File.join(SPEC_ROOT, "prebuilt_libs", platform)
     FileUtils.mkdir_p(output)
     File.write(File.join(output, "libtest.a"), "wanted")
     File.write(File.join(output, "libiconv.a"), "stale")
     fetch = HaversackTasks::Binary.new("fetch", nil)
-    noop = HaversackTasks::Binary.new("noop", nil)
     libraries = [
       HaversackTasks::Library.new("test", "1", ["libtest.a"], {platform => fetch}),
-      HaversackTasks::Library.new("iconv", "1", ["libiconv.a"], {platform => noop}),
+      HaversackTasks::Library.new("iconv", "1", ["libiconv.a"], {"x86_64-sonoma" => fetch}),
     ]
     HaversackTasks.package([platform], libraries)
     listing = IO::Memory.new
