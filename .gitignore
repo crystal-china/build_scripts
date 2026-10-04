@@ -7,3 +7,4 @@ lib.tar.gz
 bin/build_flags.conf
 bin/tasks
 lib.working
+*.o
