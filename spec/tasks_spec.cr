@@ -146,7 +146,7 @@ describe HaversackTasks do
     File.exists?(shard).should be_true
   end
 
-  it "reads build actions and omits platforms that do not need a library" do
+  it "defaults to fetch, reads named build tasks, and omits unused platforms" do
     File.write(File.join(SPEC_ROOT, "libs.yml"), <<-YAML)
     - name: gmp
       version: "6.3.0"
@@ -156,28 +156,28 @@ describe HaversackTasks do
       files: [libgmp.a]
       binaries:
         - platform: x86_64-linux-musl
-          action: build
+          action: gmp:build:x86_64-linux-musl
     - name: iconv
       version: "1.19"
       files: [libiconv.a]
       binaries:
         - platform: x86_64-sonoma
-          action: fetch
           url: https://example.test/libiconv.tar.gz
           sha256: #{"b" * 64}
     YAML
     libraries = HaversackTasks.read_libraries
     libraries.first.version.should eq("6.3.0")
     libraries.first.source.not_nil!.sha256.should eq("a" * 64)
-    libraries.first.binaries["x86_64-linux-musl"].action.should eq("build")
+    libraries.first.binaries["x86_64-linux-musl"].action.should eq("gmp:build:x86_64-linux-musl")
     libraries.last.binaries.has_key?("x86_64-linux-musl").should be_false
     libraries.last.binaries["x86_64-sonoma"].action.should eq("fetch")
+    libraries.last.binaries["x86_64-sonoma"].source.not_nil!.sha256.should eq("b" * 64)
   end
 
   it "restores a checked GMP build from downloads after clean and ignores a different version" do
     platform = "x86_64-linux-musl"
     source = HaversackTasks::Source.new("https://example.test/gmp-6.3.0.tar.xz", "a" * 64)
-    binary = HaversackTasks::Binary.new("build", nil)
+    binary = HaversackTasks::Binary.new("gmp:build:#{platform}", nil)
     library = HaversackTasks::Library.new("gmp", "6.3.0", ["libgmp.a"], {platform => binary}, source)
     cache = File.join(SPEC_ROOT, "downloads", "built", platform, "gmp-6.3.0")
     FileUtils.mkdir_p(cache)

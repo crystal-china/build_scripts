@@ -45,15 +45,11 @@ module HaversackTasks
       row["binaries"].as_a.each do |item|
         binary = item.as_h
         platform = binary["platform"].as_s
-        action = binary["action"].as_s
+        action = binary["action"]?.try(&.as_s) || "fetch"
         binary_source = nil.as(Source?)
         case action
         when "fetch"
           binary_source = Source.new(binary["url"].as_s, binary["sha256"].as_s)
-        when "build"
-          raise "#{name} for #{platform}: only Linux GMP supports build" unless name == "gmp" && platform.ends_with?("-linux-musl") && source
-        else
-          raise "#{name} for #{platform}: unknown action #{action}"
         end
         raise "#{name} for #{platform}: #{action} cannot have a URL" if action != "fetch" && (binary.has_key?("url") || binary.has_key?("sha256"))
         binaries[platform] = Binary.new(action, binary_source)
@@ -216,7 +212,7 @@ module HaversackTasks
     root = path("prebuilt_libs")
     files = platforms.flat_map do |platform|
       allowed = libraries.select { |library| library.binaries.has_key?(platform) }.flat_map(&.files).to_set
-      allowed << "gmp.pc" if libraries.any? { |library| library.name == "gmp" && library.binaries[platform]?.try(&.action) == "build" }
+      allowed << "gmp.pc" if libraries.any? { |library| library.name == "gmp" && library.binaries[platform]?.try(&.action) == "gmp:build:#{platform}" }
       Dir.glob(File.join(root, platform, "**", "*")).select { |file| File.file?(file) && allowed.includes?(File.basename(file)) }
     end.sort
     raise "No libraries to package" if files.empty?
@@ -358,16 +354,35 @@ module HaversackTasks
     libraries = read_libraries
     platforms = libraries.flat_map(&.binaries.keys).uniq
     tasks = [] of String
+    gmp = libraries.find { |library| library.name == "gmp" } || raise "GMP is missing from libs.yml"
+    gmp.binaries.each do |platform, binary|
+      id = "gmp:build:#{platform}"
+      next unless binary.action == id
+      raise "#{id}: only Linux musl targets are supported" unless platform.ends_with?("-linux-musl")
+      tasks << id
+      Croupier::Task.new(id: id, always_run: true) do
+        build_gmp(gmp, platform)
+        [] of String
+      end
+      rebuild_id = "gmp:rebuild:#{platform}"
+      tasks << rebuild_id
+      Croupier::Task.new(id: rebuild_id, always_run: true) do
+        build_gmp(gmp, platform, force: true)
+        [] of String
+      end
+    end
     libraries.each do |library|
-      library.binaries.each_key do |platform|
+      library.binaries.each do |platform, binary|
         id = "fetch:#{platform}:#{library.name}"
         tasks << id
-        Croupier::Task.new(id: id, always_run: true) do
-          case library.binaries[platform].action
-          when "build" then build_gmp(library, platform)
-          when "fetch" then fetch(library, platform)
+        if binary.action == "fetch"
+          Croupier::Task.new(id: id, always_run: true) do
+            fetch(library, platform)
+            [] of String
           end
-          [] of String
+        else
+          raise "#{id}: unknown action task #{binary.action}" unless tasks.includes?(binary.action)
+          Croupier::Task.new(id: id, inputs: [binary.action], always_run: true) { [] of String }
         end
       end
     end
@@ -377,22 +392,27 @@ module HaversackTasks
       inputs = libraries.select(&.binaries.has_key?(platform)).map { |library| "#{id}:#{library.name}" }
       Croupier::Task.new(id: id, inputs: inputs, always_run: true) { [] of String }
     end
-    tasks << "fetch:all"
-    Croupier::Task.new(id: "fetch:all", inputs: platforms.map { |platform| "fetch:#{platform}" }, always_run: true) { [] of String }
-    ["aarch64-linux-musl", "x86_64-linux-musl"].each do |platform|
-      id = "gmp:build:#{platform}"
-      tasks << id
-      Croupier::Task.new(id: id, always_run: true) do
-        build_gmp(libraries.find { |library| library.name == "gmp" }.not_nil!, platform, force: true)
-        [] of String
-      end
-    end
+    tasks << "all"
+    Croupier::Task.new(id: "all", inputs: platforms.map { |platform| "fetch:#{platform}" }, always_run: true) { [] of String }
     tasks.concat(["package", "repackage", "clobber_package", "clean", "clobber"])
 
     target = args.first? || "help"
     if {"help", "-h", "--help", "-T", "--tasks"}.includes?(target)
       puts "Usage: bin/tasks <task>"
-      puts tasks.sort.join("\n")
+      puts "all"
+      descriptions = {
+        "clean"           => "Remove prebuilt_libs and tmp; keep downloads and pkg",
+        "clobber"         => "Remove prebuilt_libs, tmp, downloads, and pkg",
+        "clobber_package" => "Remove pkg and its cache marker",
+        "package"         => "Run all, then create the pkg archive if needed",
+        "repackage"       => "Run all, then recreate the pkg archive",
+      }
+      tasks.sort.each do |task|
+        puts task unless task == "all" || descriptions.has_key?(task)
+      end
+      descriptions.each do |task, description|
+        puts "#{task} # #{description}"
+      end
       return
     end
     raise "Unknown task: #{target}" unless tasks.includes?(target)
@@ -401,7 +421,7 @@ module HaversackTasks
     when "clobber"         then clobber
     when "clobber_package" then clobber_package
     when "package", "repackage"
-      Croupier::TaskManager.run_tasks(["fetch:all"])
+      Croupier::TaskManager.run_tasks(["all"])
       package(platforms, libraries, force: target == "repackage")
     else
       Croupier::TaskManager.run_tasks([target])
