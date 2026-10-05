@@ -135,6 +135,9 @@ _bsd_stat_readlink() {
 
 ################## https://github.com/mkropat/sh-realpath #####################
 
+set -euo pipefail
+trap "echo 'error: Script failed: see failed command above'" ERR
+
 SCRIPT_PATH=$(realpath "$0")
 SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
 SCRIPT_PARENT=$(dirname "$SCRIPT_DIR")
