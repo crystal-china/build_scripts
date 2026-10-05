@@ -136,13 +136,19 @@ _bsd_stat_readlink() {
 ################## https://github.com/mkropat/sh-realpath #####################
 
 SCRIPT_PATH=$(realpath "$0")
-SCRIPT_DIR=$(dirname $SCRIPT_PATH)
-SCRIPT_PARENT=$(dirname $SCRIPT_DIR)
+SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
+SCRIPT_PARENT=$(dirname "$SCRIPT_DIR")
 build_command="${SB_BUILD_COMMAND:-shards}"
 
-if echo "$*" |grep -F -qs -e '--target='; then
-    cr_target=$(echo $* |sed 's#.*--target=\([a-z0-9_-]*\).*#\1#')
+cr_target=""
 
+for arg in "$@"; do
+    case "$arg" in
+        --target=*) cr_target=${arg#--target=} ;;
+    esac
+done
+
+if [[ -n "$cr_target" ]]; then
     # For use hash map, BASH 4.0 is requried.
     declare -A mapping
 
@@ -160,28 +166,31 @@ if echo "$*" |grep -F -qs -e '--target='; then
 
     read -r targetname libname <<< "${mapping[$cr_target]}"
 
+    build_args=()
+
+    for arg in "$@"; do
+        case "$arg" in
+            --static|--cross-compile|--progress) ;;
+            --target=*) build_args+=("--target=$targetname") ;;
+            *) build_args+=("$arg") ;;
+        esac
+    done
+
+    if [[ "$targetname" =~ -macos-none ]]; then
+        build_args+=("-Duse_libiconv")
+    fi
+
+    build_args+=("--cross-compile")
+
     if [[ "$targetname" =~ -linux-musl$ ]]; then
         xml2_extra=" -llzma"
     else
         xml2_extra=""
     fi
 
-    if [[ "$targetname" =~ -macos-none ]]; then
-        build_args="$* -Duse_libiconv"
-    else
-        build_args="$*"
-    fi
-
-    # Delete --progress if passed this option.
-    build_args=${build_args//--progress/}
-    # Replace target with really target
-    build_args=${build_args//$cr_target/$targetname}
-    # Add --cross-compile if user not added it.
-    build_args="${build_args//--cross-compile} --cross-compile"
-
     tmpfile="$(mktemp -d)/$$"
 
-    ${build_command} build ${build_args} |tee $tmpfile
+    "$build_command" build "${build_args[@]}" |tee "$tmpfile"
 
     if cc_output=$(cat "$tmpfile" |grep '^cc '); then
         lib_path="${SCRIPT_PARENT}/prebuilt_libs/${libname}"
@@ -192,11 +201,11 @@ if echo "$*" |grep -F -qs -e '--target='; then
             sed "s#-L[^ ]*#-L${lib_path}#" | # Where to find static libraries.
             sed "s#.*#& -lunwind#" |        # Add -lunwind is necessary for Crystal backtrace feature.
             sed "s#-lxml2#-lxml2${xml2_extra}#" | # Alpine's static libxml2 needs liblzma.
-            tee $tmpfile && bash $tmpfile
+            tee "$tmpfile" && bash "$tmpfile"
     else
         echo "$build_output"
     fi
 
 else
-    ${build_command} build "$@"
+    "$build_command" build "$@"
 fi

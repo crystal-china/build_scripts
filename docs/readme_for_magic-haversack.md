@@ -112,7 +112,7 @@ $: sb --target=amd64 --no-debug --link-flags=-s --release
 $: sb --target=arm64 --no-debug --link-flags=-s --release
 ```
 
-> **Alpine static builds:** Do **not** pass Crystal's `--static` for either `x86_64-linux-musl` or `aarch64-linux-musl`. In this workflow, `zig cc` already links a static musl binary. `--static` makes Crystal ask the build host's `pkg-config` for extra static dependencies, which may not match the Alpine libraries in `prebuilt_libs`.
+> **Alpine static builds:** Crystal's `--static` is unnecessary for either `x86_64-linux-musl` or `aarch64-linux-musl`. In this workflow, `zig cc` already links a static musl binary. `sb` and `cb` automatically remove `--static` when a target is specified, preventing Crystal from asking the build host's `pkg-config` for extra static dependencies that may not match the Alpine libraries in `prebuilt_libs`.
 
 In fact, You can use `sb` in place of `shards build` when do cross compile directly
 it takes care of using `zig cc` when cross-compiling.
