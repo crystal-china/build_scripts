@@ -4,6 +4,7 @@ On Linux, most of these tools are already available, though you may need to inst
 
 - `bash` (version > 4.0)
 - `sed`
+- `readlink` (provided by `coreutils` on Linux)
 - `zig` compiler
 - `tar` with xz support for extracting and packaging the libraries
 - `make` `gcc` `m4` `llvm`, which build the Linux GMP libraries.
@@ -17,9 +18,48 @@ On Linux, most of these tools are already available, though you may need to inst
 3. `shards build`
 4. `bin/tasks all`, it's also builds the non-LTO GMP libraries for both Linux targets.
 
-Following is the all tasks available.
+I also upload the all prebuilt libraries as assets on the [releases page](https://github.com/crystal-china/crystal_build_scripts/releases).
+You can skip run tasks if you download the `prebuilt_libs-{version}.tar.xz` from the GitHub releases page instead.
+then run `tar -xJf prebuilt_libs-0.7.0.tar.xz` from the repository root.
+
+```
+ ╰──➤ $ cd build_scripts/
+ 
+ ╰──➤ $ tar -xJf prebuilt_libs-0.7.0.tar.xz
+
+ ╰──➤ $ tree -L1 prebuilt_libs/
+prebuilt_libs/
+├── aarch64-linux-musl
+├── aarch64-sonoma
+├── x86_64-linux-musl
+└── x86_64-sonoma
+```
+
+3. Add `PROJECT_ROOT/bin` to your `$PATH`. You can then use `sb` in place of `shards build` or `cb` in place of `crystal build` for cross-compile a Crystal program, it takes care of using `zig cc` when cross-compiling.
+
+Following is useful commands for build bianry on my linux host, with no debug info, strip symbols, and use release mode.
 
 ```bash
+$: sb --target=amd64 --no-debug --link-flags=-s --release
+$: sb --target=arm64 --no-debug --link-flags=-s --release
+$: sb --target=amd64-mac --no-debug --link-flags=-s --release
+$: sb --target=arm64-mac --no-debug --link-flags=-s --release
+```
+----------------
+
+Following is the output for build `bin/tasks` x86_64 static binary for current project.
+
+```sh
+ ╰──➤ $ sb --target=amd64
+I: Dependencies are satisfied
+I: Building: tasks
+cc /home/zw963/Crystal/crystal-china/build_scripts/bin/tasks.o -o /home/zw963/Crystal/crystal-china/build_scripts/bin/tasks  -rdynamic -fuse-ld=mold -static -L/home/zw963/Crystal/bin/../lib/crystal -lz -lyaml `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libssl || printf %s '-lssl -lcrypto'` `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libcrypto || printf %s '-lcrypto'` -lpcre2-8 -pthread -lpthread -lgc -lpthread -ldl
+
+zig cc -target x86_64-linux-musl /home/zw963/Crystal/crystal-china/build_scripts/bin/tasks.o -o /home/zw963/Crystal/crystal-china/build_scripts/bin/tasks  -rdynamic -fuse-ld=mold -static -L/home/zw963/Crystal/crystal-china/build_scripts/prebuilt_libs/x86_64-linux-musl -lz -lyaml `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libssl || printf %s '-lssl -lcrypto'` `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libcrypto || printf %s '-lcrypto'` -lpcre2-8 -pthread -lpthread -lgc -lpthread -ldl -lunwind
+
+ ╰──➤ $ file bin/tasks
+bin/tasks: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, with debug_info, not stripped
+
  ╰──➤ $ bin/tasks
 Usage: bin/tasks <task>
 all # Fetch all libraries and build Linux GMP
@@ -72,104 +112,41 @@ package # Run all, then create the pkg archive if needed
 repackage # Run all, then recreate the pkg archive
 ```
 
-Above also print the supported libraries and version, feel free to open an issue
-if you need support for other third-party libraries.
+Above print the all tasks available, also includes the supported libraries and version, 
 
+Feel free to open an issue if you need support for other third-party libraries.
 
-### Why build GMP from source
+----------
 
-We build GMP from source for both Alpine targets (aarch64-linux-musl and x86_64-linux-musl) to avoid the undefined-symbol errors encountered when linking Alpine’s prebuilt GMP 6.3.0 archive with  zig cc.
-
-The build uses `zig cc with -O3  -fno-lto` to produce a compatible static libgmp.a. 
-
-bin/tasks all handles this automatically and reuses cached builds when the version and build inputs remain unchanged. 
-
-For macOS, we use the prebuilt Homebrew bottles.
-
-I also upload the libraries as assets on the [releases page](https://github.com/crystal-china/crystal_build_scripts/releases).
-You can skip run tasks if you download the `prebuilt_libs-{version}.tar.xz` from the GitHub releases page instead.
-then run `tar -xJf prebuilt_libs-0.7.0.tar.xz` from the repository root.
-
-```
- ╰──➤ $ cd build_scripts/
-
- ╰──➤ $ tree -L1 prebuilt_libs/
-prebuilt_libs/
-├── aarch64-linux-musl
-├── aarch64-sonoma
-├── x86_64-linux-musl
-└── x86_64-sonoma
-
-5 directories, 0 files
-```
-
-3. Add `PROJECT_ROOT/bin` to your `$PATH`. You can then use `sb` or `cb` to cross-compile a Crystal program.
-
-4. build an AMD64/ARM64 static binary, with no debug info, strip symbols, and use release mode.
-
-```sh
-$: sb --target=amd64 --no-debug --link-flags=-s --release
-$: sb --target=arm64 --no-debug --link-flags=-s --release
-```
-
-> **Alpine static builds:** Crystal's `--static` is unnecessary for either `x86_64-linux-musl` or `aarch64-linux-musl`. In this workflow, `zig cc` already links a static musl binary. `sb` and `cb` automatically remove `--static` when a target is specified, preventing Crystal from asking the build host's `pkg-config` for extra static dependencies that may not match the Alpine libraries in `prebuilt_libs`.
-
-In fact, You can use `sb` in place of `shards build` when do cross compile directly
-it takes care of using `zig cc` when cross-compiling.
-
-To build a `.cr` file directly, use `cb` instead of `crystal build` instead. 
-
-It uses the same setup as `sb`:
-
-```sh
-$: cb --target=arm64 hello.cr -o bin/hello
-```
-
-----------------
-
-The following examples show how I cross-compile binaries for `x86_64-linux-musl`, `aarch64-linux-musl`, `x86_64-darwin`, and `aarch64-darwin` on my Linux host.
-
-```sh
- ╰──➤ $ sb --cross-compile --target=x86_64-linux-musl
-CRYSTAL_WORKERS=
-args=   --target=x86_64-linux-musl --cross-compile
-I: Dependencies are satisfied
-I: Building: tasks
-cc /home/zw963/Crystal/crystal-china/build_scripts/bin/tasks.o -o /home/zw963/Crystal/crystal-china/build_scripts/bin/tasks  -rdynamic -fuse-ld=mold -L/home/zw963/Crystal/bin/../lib/crystal -lz `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libssl || printf %s '-lssl -lcrypto'` `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libcrypto || printf %s '-lcrypto'` -lyaml -lpcre2-8 -lgc -lpthread -ldl
-zig cc -target x86_64-linux-musl /home/zw963/Crystal/crystal-china/build_scripts/bin/tasks.o -o /home/zw963/Crystal/crystal-china/build_scripts/bin/tasks  -rdynamic -fuse-ld=mold -L/home/zw963/Crystal/crystal-china/build_scripts/prebuilt_libs/x86_64-linux-musl -lz `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libssl || printf %s '-lssl -lcrypto'` `command -v pkg-config > /dev/null && pkg-config --libs --silence-errors libcrypto || printf %s '-lcrypto'` -lyaml -lpcre2-8 -lgc -lpthread -ldl -lunwind
-
- ╰──➤ $ file bin/tasks
-bin/tasks: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, with debug_info, not stripped
-```
-
-Above command same as `sb --target=amd64`
-
--------------
-
-Following is several useful commands:
+Following is a example use `cb` instead of `sb`
 
 ```bash
-sb --cross-compile --target=aarch64-linux-musl # sb --target=amd64-mac
+ ╰──➤ $ cb --target=arm64 examples/xml_hello.cr -o xml_hello
+cc xml_hello.o -o xml_hello  -rdynamic -fuse-ld=mold -static -L/home/zw963/Crystal/bin/../lib/crystal -lxml2 -lm -pthread -lz -licuuc -licudata -lpthread -lm -lgc -lpthread -ldl
 
-sb --cross-compile --target=x86_64-darwin  # sb --target=amd64-mac
+zig cc -target aarch64-linux-musl xml_hello.o -o xml_hello  -rdynamic -fuse-ld=mold -static -L/home/zw963/Crystal/crystal-china/build_scripts/prebuilt_libs/aarch64-linux-musl -lxml2 -llzma -lm -pthread -lz   -lpthread -lm -lgc -lpthread -ldl -lunwind
 
-sb --cross-compile --target=aarch64-darwin # sb --target=arm64-mac
+ ╰──➤ $ file ./xml_hello
+./xml_hello: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, with debug_info, not stripped
+
+ ╰──➤ $ ./xml_hello
+XML OK: world
 ```
+-------------
 
 I've been using this workflow for a long time, and it works well for me.
-I don't want to add unnecessary complexity to achieve the same result.
-I'm comfortable with docker/podman too; I just prefer to use it only when I need it.
+I'm comfortable with docker/podman too, but I don't want to add unnecessary complexity to achieve the same result.
 
 ### Running a Crystal program that uses XML on macOS
 
 The macOS libxml2 bottle provides a dynamic library. Linking a Crystal program
 with `require "xml"` succeeds on Linux, but the resulting macOS executable also
-needs that library at runtime; even `--static` does not change this.
+needs that library at runtime. 
 
-For example, from this repository's root, build the [XML example](../examples/mac_xml_hello.cr) for an Apple Silicon Mac:
+For example, from this repository's root, build the [XML example](../examples/xml_hello.cr) for an Apple Silicon Mac:
 
-```shz
-bin/cb --target=arm64-mac examples/mac_xml_hello.cr -o mac_xml_hello_arm64
+```sh
+bin/cb --target=arm64-mac examples/xml_hello.cr -o mac_xml_hello_arm64
 ```
 
 Copy `mac_xml_hello_arm64` and `prebuilt_libs/aarch64-sonoma/libxml2.16.dylib` to the same directory on the Mac.
@@ -180,10 +157,7 @@ cd folder # Or whichever directory contains both files
 DYLD_LIBRARY_PATH="$PWD" ./mac_xml_hello_arm64
 ```
 
-This prints `macOS XML OK: world` on the tested Apple Silicon Mac.
-`DYLD_LIBRARY_PATH` names the directory containing the dylib, not the dylib
-itself. The Homebrew bottle's embedded libxml2 path still contains
-`@@HOMEBREW_PREFIX@@`; without the environment variable, the copied executable
+This prints `XML OK: world`, without this environment variable, the copied executable
 failed with `Symbol not found: _xmlFree`.
 
 ## Updating library versions
@@ -257,6 +231,26 @@ Then copy the last part into the corresponding entries in `libs.yml`.
    Keep the `alpine_version` separate when present. If the selected macOS
    release changes, update the platform names in `libs.yml` and the library
    directory mappings in `bin/sb`.
+
+### Why build GMP from source
+
+We build GMP from source for both Alpine targets (aarch64-linux-musl and x86_64-linux-musl) to avoid the undefined-symbol errors encountered when linking Alpine’s prebuilt GMP 6.3.0 archive with `zig cc`.
+
+The build uses `zig cc with -O3  -fno-lto` to produce a compatible static libgmp.a
+
+`bin/tasks all` handles this automatically and reuses cached builds when the version and build inputs remain unchanged. 
+
+For macOS, we use the prebuilt Homebrew bottles.
+
+### Why no --static
+
+> **Alpine static builds:** You do not need to pass `--static` yourself. `sb` and `cb` add it automatically for `x86_64-linux-musl` and `aarch64-linux-musl`.
+
+`--static` makes Crystal query the build host's `pkg-config` forstatic dependencies. 
+These may differ from the libraries in `prebuilt_libs`.
+
+The scripts remove `-licuuc` and `-licudata`, which our Alpine libxml2 does not
+need, and add `-llzma` when linking libxml2. 
 
 ## How it works
 
