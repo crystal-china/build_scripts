@@ -166,10 +166,10 @@ In `libs.yml`, pair `alpine_package` with `alpine_version` and `homebrew_formula
 
 Omit the unused pair when a library is needed on only for one platform. 
 
-Downloading is the default: include `url` and `sha256`.
+List each library's platforms under `platform_configs`. Put `url` and `sha256`
+under each platform's `download_source`. `fetch` is the default action.
 
-To build GMP, set `action` to its task name, such as `gmp:build:aarch64-linux-musl`
-the task uses GMP's top-level `source`.
+To build GMP, set `action` to its task name, such as `gmp:build:aarch64-linux-musl`.
 
 ### Updating libraries for Alpine
 
@@ -203,11 +203,13 @@ Saving to: ‘/tmp/gc-static-8.2.12-r0.apk.x86_64’
 2026-10-02 14:27:59 (2.05 MB/s) - ‘/tmp/gc-static-8.2.12-r0.apk.x86_64’ saved [484181/484181]
 
     - platform: aarch64-linux-musl
-      url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/aarch64/gc-static-8.2.12-r0.apk
-      sha256: "bd52c9a0c74f54e7bf1992fc84221d4223969469fad996cc0cc160808c06e0aa"
+      download_source:
+        url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/aarch64/gc-static-8.2.12-r0.apk
+        sha256: "bd52c9a0c74f54e7bf1992fc84221d4223969469fad996cc0cc160808c06e0aa"
     - platform: x86_64-linux-musl
-      url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/gc-static-8.2.12-r0.apk
-      sha256: "c8f2dc4491237014595585a01b3219701215d44100bc90e2d4d6cba931367d28"
+      download_source:
+        url: https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.24/main/x86_64/gc-static-8.2.12-r0.apk
+        sha256: "c8f2dc4491237014595585a01b3219701215d44100bc90e2d4d6cba931367d28"
 ```
 
 Then copy the last part into the corresponding entries in `libs.yml`.
@@ -226,7 +228,7 @@ Then copy the last part into the corresponding entries in `libs.yml`.
    (`arm64_sonoma` for aarch64 and `sonoma` for x86_64). If the current formula
    has no Intel macOS bottle, use the most recent formula revision that provides both
    architectures; the pinned formula links are recorded in `libs.yml`.
-4. Update the GHCR blob URL and `sha256`, and set `homebrew_version` to the
+4. Update the GHCR blob URL and `sha256` under the platform's `download_source`, and set `homebrew_version` to the
    bottle's package version, including any Homebrew revision suffix (e.g. `10.47_1`).
    Keep the `alpine_version` separate when present. If the selected macOS
    release changes, update the platform names in `libs.yml` and the library
