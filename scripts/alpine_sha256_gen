@@ -16,10 +16,12 @@ wget -O /tmp/${package_name}.x86_64 $url_x86_64
 
 sha_aarch64=$(sha256sum /tmp/${package_name}.aarch64 |awk '{print $1}')
 echo "    - platform: aarch64-linux-musl"
-echo "      url: $url_aarch64"
-echo "      sha256: \"$sha_aarch64\""
+echo "      download_source:"
+echo "        url: $url_aarch64"
+echo "        sha256: \"$sha_aarch64\""
 
 sha_x86_64=$(sha256sum /tmp/${package_name}.x86_64 |awk '{print $1}')
 echo "    - platform: x86_64-linux-musl"
-echo "      url: $url_x86_64"
-echo "      sha256: \"$sha_x86_64\""
+echo "      download_source:"
+echo "        url: $url_x86_64"
+echo "        sha256: \"$sha_x86_64\""
