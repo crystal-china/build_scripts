@@ -141,24 +141,37 @@ I'm comfortable with docker/podman too, but I don't want to add unnecessary comp
 
 The macOS libxml2 bottle provides a dynamic library. Linking a Crystal program
 with `require "xml"` succeeds on Linux, but the resulting macOS executable also
-needs that library at runtime. 
+needs `libxml2.16.dylib` at runtime. 
 
 For example, from this repository's root, build the [XML example](../examples/xml_hello.cr) for an Apple Silicon Mac:
 
 ```sh
+git submodule update --init vendor/package_payload # Optional: enable single-file packaging
 bin/cb --target=arm64-mac examples/xml_hello.cr -o mac_xml_hello_arm64
 ```
 
-Copy `mac_xml_hello_arm64` and `prebuilt_libs/aarch64-sonoma/libxml2.16.dylib` to the same directory on the Mac.
-Then run:
+When the submodule is initialized, `sb` and `cb` also create `mac_xml_hello_arm64.sh`,
+bundling the executable, libxml2, and a BASH wrapper that sets `DYLD_LIBRARY_PATH`.
+Without the submodule, they generate only the original executable. 
+
+Copy the `.sh` file to the Mac and run:
 
 ```sh
-cd folder # Or whichever directory contains both files
+chmod +x mac_xml_hello_arm64.sh
+./mac_xml_hello_arm64.sh
+```
+
+This wrapper bascially same as: 
+
+```sh
+cd folder # Or whichever directory contains `libxml2.16.dylib` and binary file.
 DYLD_LIBRARY_PATH="$PWD" ./mac_xml_hello_arm64
 ```
 
 This prints `XML OK: world`, without this environment variable, the copied executable
 failed with `Symbol not found: _xmlFree`.
+
+Check [scripts/macos_wrapper.sh](scripts/macos_wrapper.sh) for more details.
 
 ## Updating library versions
 

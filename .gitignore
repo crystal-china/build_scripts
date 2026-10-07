@@ -5,4 +5,5 @@ pkg/
 tmp/
 bin/build_flags.conf
 bin/tasks
+bin/tasks.sh
 *.o

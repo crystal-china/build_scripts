@@ -75,7 +75,33 @@ if [[ -n "$cr_target" ]]; then
             sed "/^zig cc/s#-L[^ ]*#-L${lib_path}#" | # Where to find static libraries.
             sed "/^zig cc/s#.*#& -lunwind#" |        # Add -lunwind is necessary for Crystal backtrace feature.
             sed "/^zig cc/s#-lxml2#-lxml2${xml2_extra}#" | # Alpine's static libxml2 needs liblzma.
-            tee "$tmpfile" && bash "$tmpfile"
+            tee "$tmpfile"
+
+        if [[ "$targetname" =~ -macos-none$ ]] && [[ -f "$SCRIPT_PARENT/vendor/package_payload/package_payload" ]]; then
+            (
+                zig() {
+                    command zig "$@" || return
+
+                    while (( $# > 1 )); do
+                        if [[ "$1" == -o ]]; then
+                            "$SCRIPT_PARENT/scripts/package_macos.sh" "$2" "$libname"
+
+                            return
+                        fi
+
+                        shift
+                    done
+
+                    echo "Cannot find the linker output path (-o)" >&2
+
+                    return 1
+                }
+
+                source "$tmpfile"
+            )
+        else
+            bash "$tmpfile"
+        fi
     else
         echo "$build_output"
     fi
