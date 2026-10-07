@@ -1,0 +1,3 @@
+[submodule "vendor/package_payload"]
+	path = vendor/package_payload
+	url = https://github.com/zw963/package_payload.git
