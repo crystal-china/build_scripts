@@ -71,7 +71,6 @@ ARG CRYSTAL_ARGS=""
 
 ARG SHOW_BUILD_LOG=0
 
-# 这里不要加 --progress, 加了 grep 无法匹配到 cc 的输出结果
 # shards build .* --production 可能被替换为 crystal build file.cr -o bin/file，因此单独写一行。
 RUN --mount=type=cache,target=/root/.cache/crystal \
     mkdir -p bin && \
@@ -82,7 +81,7 @@ RUN --mount=type=cache,target=/root/.cache/crystal \
         --cross-compile --target=aarch64-linux-musl \
         $CRYSTAL_ARGS \
         > /tmp/crystal-build.log 2>&1; then \
-        grep '^cc ' /tmp/crystal-build.log | tee bin/app.sh; \
+        tr '\r' '\n' < /tmp/crystal-build.log | grep '^cc ' | tee bin/app.sh; \
         if ! test -s bin/app.sh; then \
             cat /tmp/crystal-build.log >&2; \
             exit 1; \

@@ -3,7 +3,6 @@
 
 compile_time_flags=-Dstrict_multi_assign -Dno_number_autocast -Duse_pcre2 -Dpreview_overload_order
 
-# Don't add --progress, it's not work well with this script!
 flags=--release --stats --time
 
 link_flags=--link-flags=-Wl,-L/app --link-flags=-s --link-flags=-no-pie
