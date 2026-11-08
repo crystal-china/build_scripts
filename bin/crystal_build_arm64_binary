@@ -1,19 +1,18 @@
 #!/bin/bash
 
-cr_file="$1"
-ROOT=$(dirname `readlink -e $0`)
-
 set -eu
 
 platform=linux/arm64/v8
 tag_name=crystal_build_arm64_binary
-docker_file=/tmp/Dockerfile.crystal_arm64_build
+tmpdir=$(mktemp -d)
+docker_file="$tmpdir/Dockerfile"
+trap 'rm -f -- "$docker_file"; rmdir -- "$tmpdir"' EXIT
 
 cat <<'HEREDOC' > $docker_file
 # -*- mode: dockerfile-ts; -*-
 
 # 确保 build 和 linking 是同一个 alpine 版本
-ARG alpine_version=3.24
+ARG ALPINE_VERSION=3.24
 # mirrors.ustc.edu.cn mirrors.tuna.tsinghua.edu.cn
 ARG alpine_mirror=mirrors.ustc.edu.cn
 
@@ -22,7 +21,7 @@ ARG alpine_mirror=mirrors.ustc.edu.cn
 # 如果不指定 --platform, docker 会自动选择和命令行 --platform 指定的相同架构。
 # 这里强制指定使用和宿主机相同的架构进行 cross compile 操作。
 # 你当然可以在 ARM64 中完成编译 + 链接所有步骤，但是使用宿主机相同平台编译性能好得多。
-FROM --platform=$BUILDPLATFORM alpine:$alpine_version AS cross_compile
+FROM --platform=$BUILDPLATFORM alpine:$ALPINE_VERSION AS cross_compile
 
 ARG alpine_mirror
 RUN sed -i "s/dl-cdn.alpinelinux.org/$alpine_mirror/g" /etc/apk/repositories
@@ -55,42 +54,52 @@ ARG compile_time_flags="-Dstrict_multi_assign -Dno_number_autocast \
 ARG link_flags="--link-flags=-Wl,-L/app --link-flags=-s --link-flags=-no-pie"
 
 RUN --mount=type=cache,target=/root/.cache/shards \
-     which shards &>/dev/null && \
-    ( \
+    if [ -f shard.yml ]; then \
         shards install \
-        --production \
-        --ignore-crystal-version \
-        --skip-postinstall \
-        --skip-executables \
-    ) \
-    || \
-       true
+            --production \
+            --ignore-crystal-version \
+            --skip-postinstall \
+            --skip-executables; \
+    fi
 
 # 使后面的 CMD 命令 cache 失效
 ARG CACHEBUST_ARG
 
-RUN crystal env
+ARG SHARDS_TARGET
+
+ARG CRYSTAL_ARGS=""
+
+ARG SHOW_BUILD_LOG=0
 
 # 这里不要加 --progress, 加了 grep 无法匹配到 cc 的输出结果
+# shards build .* --production 可能被替换为 crystal build file.cr -o bin/file，因此单独写一行。
 RUN --mount=type=cache,target=/root/.cache/crystal \
-    ls -1 /root/.cache/crystal | tail; \
-    du -sh /root/.cache/crystal || true; \
-    shards build --production \
-    --static \
-    $flags $compile_time_flags $link_flags \
-    --cross-compile --target=aarch64-linux-musl \
-    |grep '^cc ' \
-    |tee bin/app.sh; \
-    du -sh /root/.cache/crystal || true
-
-# bin/app.sh 必须不为空
-RUN test -s bin/app.sh
+    mkdir -p bin && \
+    rm -f bin/app.sh && \
+    if shards build $SHARDS_TARGET --production \
+        --static \
+        $flags $compile_time_flags $link_flags \
+        --cross-compile --target=aarch64-linux-musl \
+        $CRYSTAL_ARGS \
+        > /tmp/crystal-build.log 2>&1; then \
+        grep '^cc ' /tmp/crystal-build.log | tee bin/app.sh; \
+        if ! test -s bin/app.sh; then \
+            cat /tmp/crystal-build.log >&2; \
+            exit 1; \
+        fi; \
+        if [ "$SHOW_BUILD_LOG" = "1" ]; then \
+            cat /tmp/crystal-build.log; \
+        fi; \
+    else \
+        cat /tmp/crystal-build.log >&2; \
+        exit 1; \
+    fi
 
 # ============================== 使用目标系统架构 link binary ==============================
 
 # 如果这里不指定 --platform, 则 docker 会自动选择根据命令行 --platform 指定的架构
 # 因为命令行需要指定 --platform linux/arm64/v8，因此，这里使用  ARM64 架构
-FROM alpine:$alpine_version as target_linking
+FROM alpine:$ALPINE_VERSION as target_linking
 
 ARG alpine_mirror
 RUN sed -i "s/dl-cdn.alpinelinux.org/$alpine_mirror/g" /etc/apk/repositories
@@ -117,37 +126,91 @@ ARG CACHEBUST_ARG
 RUN sh -ex bin/app.sh
 HEREDOC
 
-set +u
-if [ -f "$cr_file" ] && echo "$cr_file" |grep -qs "\.cr$"; then
-    sed -i "s#shards build --production#crystal build ${cr_file}#g" $docker_file
-    shift 1
-fi
-set -u
+cr_file=""
 
-BUILD_ARGS="
---platform $platform \
---build-arg CACHEBUST_ARG=$(date +%s) \
--v $PWD:/app \
--t $tag_name \
--f $docker_file \
-.
-"
+if [[ "${1:-}" == *.cr ]]; then
+    [[ -f "$1" ]] || {
+        printf 'Source file not found: %s\n' "$1" >&2
+        exit 2
+    }
 
-if [ -f "$ROOT/build_flags.conf" ]; then
-    BUILD_ARGS="--build-arg-file $ROOT/build_flags.conf $BUILD_ARGS"
+    cr_file=$1
+
+    sed -i \
+        "s#shards build .* --production#crystal build \"$cr_file\"#" \
+        "$docker_file"
+
+    shift
 fi
 
-if [[ "$cr_file" == "-f" ]]; then
-    BUILD_ARGS="--build-arg FORCE_ARG=$(date +%s) $BUILD_ARGS"
-    shift 1
+BUILD_ARGS=(
+    --platform "$platform"
+    --build-arg "CACHEBUST_ARG=$(date +%s%N)"
+    --build-arg "SHARDS_TARGET=${SHARDS_TARGET:-}"
+    -v "$PWD:/app"
+    -t "$tag_name"
+    -f "$docker_file"
+)
+
+build_flags_conf="$PWD/build_flags.conf"
+if [ -s "$build_flags_conf" ]; then
+    printf 'WARNING: Loading custom build arguments from %s\n' "$build_flags_conf" >&2
+    BUILD_ARGS+=(
+        --build-arg-file "$build_flags_conf"
+    )
 fi
 
-if [[ "$cr_file" == "-ff" ]]; then
-    BUILD_ARGS="$BUILD_ARGS --no-cache --pull=always"
-    shift 1
+crystal_args=()
+
+while (( $# > 0 )); do
+    case "$1" in
+        -f)
+            BUILD_ARGS+=(
+                --build-arg "FORCE_ARG=$(date +%s%N)"
+            )
+            ;;
+        -ff)
+            # --no-cache 不会自动清空 type=cache 保存的内容, 只会清空构建层缓存。
+            # 官方文档明确区分了构建层缓存与缓存挂载。
+            # --progress=plain podman 无效。
+            BUILD_ARGS+=(
+                --no-cache
+                --pull=always
+                --progress=plain
+                --build-arg "SHOW_BUILD_LOG=1"
+            )
+            ;;
+        *)
+            crystal_args+=("$1")
+            ;;
+    esac
+
+    shift
+done
+
+if [[ -n "$cr_file" ]]; then
+    output=$(basename -- "$cr_file" .cr)
+
+    for ((i=0; i<${#crystal_args[@]}; i++)); do
+        if [[ "${crystal_args[i]}" == "-o" ]]; then
+            output="${crystal_args[i+1]:-}"
+            break
+        fi
+    done
+
+    if [[ -d "$output" ]]; then
+        printf "Error: can't use \`%s\` as output filename because it's a directory\n" "$output" >&2
+        exit 2
+    fi
 fi
 
-# 调试输出，使用 --progress=plain
-podman buildx build $BUILD_ARGS --target cross_compile
+BUILD_ARGS+=(
+    --build-arg "CRYSTAL_ARGS=${crystal_args[*]}"
+)
 
-podman buildx build $BUILD_ARGS --target target_linking
+
+podman buildx build "${BUILD_ARGS[@]}" --target cross_compile .
+
+podman buildx build "${BUILD_ARGS[@]}" --target target_linking .
+
+# binary=$(cat bin/app.sh |grep -o -e '-o [^ ]*' |cut -d' ' -f2)

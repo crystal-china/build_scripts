@@ -3,7 +3,7 @@ prebuilt_libs/
 downloads/
 pkg/
 tmp/
-bin/build_flags.conf
+/build_flags.conf
 bin/tasks
 bin/tasks.sh
 *.o
