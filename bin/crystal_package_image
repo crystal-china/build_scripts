@@ -57,7 +57,6 @@ COPY --from=runtime_data /usr/share/zoneinfo /usr/share/zoneinfo
 
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV TZDIR=/usr/share/zoneinfo
-ENV LANG=C.UTF-8
 
 ENTRYPOINT ["/app/binary"]
 HEREDOC
