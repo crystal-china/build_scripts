@@ -8,7 +8,7 @@ Run these commands from the project root. The build scripts mount the current di
 
 ## Requirements
 
-- Linux, Bash, and Podman](https://podman.io/docs/installation).
+- Linux, Bash, and [Podman](https://podman.io/docs/installation).
 - Cross-architecture builds require QEMU user-mode emulation and binfmt support. 
   For example, on Arch Linux:
 
@@ -108,10 +108,7 @@ podman image inspect localhost/crystal-china:latest
 
 The script automatically detects whether the binary is AMD64 or ARM64 and builds the image for the correct architecture, rejects dynamically linked binaries, and includes CA certificates and timezone data (`tzdata`). 
 
-The final image uses `scratch`, with `/app/binary` as its entrypoint.
-
-
-The image no shell or package manager, the binary is installed as `/app/binary` and used as the image entrypoint.
+The final `scratch` image contains no shell or package manager and runs `/app/binary` as its entrypoint.
 
 To copy the image to a Raspberry Pi using an existing SSH alias:
 
@@ -180,7 +177,11 @@ PLATFORM=linux/arm64/v8 build_rust_binary
 
 The script currently supports AMD64 and ARM64. It runs `cargo zigbuild --release` by default, targeting the corresponding musl platform.
 
-As with `build_binary`, You can run any command available inside the build container instead of the default.
+Use `-f` to rebuild the toolchain image, or `-ff` to rebuild it without using image-layer cache.
+
+Without these options, an existing toolchain image is reused.
+
+As with `build_binary`, you can run any command available inside the build container instead of the default.
 
 The above two are separate helpers; the Crystal-specific options described above do not necessarily apply to them.
 
