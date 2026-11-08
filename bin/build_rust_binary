@@ -26,22 +26,30 @@ declare -A target_map=(
      ["linux/amd64"]="x86_64-unknown-linux-musl"
 )
 
-
-force="$1"
-
 set -eux
 
-tag_name=build_rust_binary
-docker_file=/tmp/Dockerfile.rust_build
+force="${1:-}"
 
-if ! podman images --format '{{.Repository}}' |grep -qs "localhost/$tag_name" || [[ "$force" == "-f" ]]; then
+if [[ "$force" == "-f" || "$force" == "-ff" ]]; then
+    shift
+else
+    force=""
+fi
+
+tag_name="build_rust_${platform//\//_}_binary"
+tmpdir=$(mktemp -d)
+docker_file="$tmpdir/Dockerfile"
+trap 'rm -f -- "$docker_file"; rmdir -- "$tmpdir"' EXIT
+
+if ! podman image exists "localhost/$tag_name:latest" || [[ -n "$force" ]]; then
     cat <<HEREDOC > $docker_file
-ARG FORCE_ARG
 ARG alpine_version=3.23
 ARG alpine_mirror=mirrors.ustc.edu.cn
 
-FROM --platform=\$BUILDPLATFORM alpine:\$alpine_version
 # FROM rust:1-alpine
+FROM --platform=\$BUILDPLATFORM alpine:\$alpine_version
+
+ARG FORCE_ARG
 
 ARG alpine_mirror
 RUN sed -i "s/dl-cdn.alpinelinux.org/\$alpine_mirror/g" /etc/apk/repositories
@@ -71,28 +79,37 @@ RUN cargo install cargo-zigbuild --locked
 
 WORKDIR /app
 
-# 允许 override 这个变量，AMD64 平台下默认是 12(2^^14，4K), 但是树莓派下是 14 (64K)
+# 允许 override 这个变量，AMD64 平台下默认是 12(2^^14，4K), 但是树莓派下是 16 (64K)
 #  具体大小可以通过 getconf PAGE_SIZE 获取
 ARG JEMALLOC_SYS_WITH_LG_PAGE=12
 # 确保运行时也继承
-ENV JEMALLOC_SYS_WITH_LG_PAGE=$JEMALLOC_SYS_WITH_LG_PAGE
+ENV JEMALLOC_SYS_WITH_LG_PAGE=\$JEMALLOC_SYS_WITH_LG_PAGE
 
 CMD cargo zigbuild --release --target ${target_map["$platform"]}
 HEREDOC
 
-    BUILD_ARGS="
--t $tag_name \
--f $docker_file
-"
+    BUILD_ARGS=(
+        -t "$tag_name"
+        -f "$docker_file"
+    )
 
-    if [[ "$force" == "-f" ]]; then
-        BUILD_ARGS="--build-arg FORCE_ARG=$(date +%s) $BUILD_ARGS"
-    fi
+    case "$force" in
+        -f)
+            BUILD_ARGS+=(
+                --build-arg "FORCE_ARG=$(date +%s%N)"
+            )
+            ;;
+        -ff)
+            BUILD_ARGS+=(
+                --no-cache
+                --pull=always
+                --progress=plain
+            )
+            ;;
+    esac
 
     # 调试输出，使用 --progress=plain --no-cache
-    podman buildx build $BUILD_ARGS
+    podman buildx build "${BUILD_ARGS[@]}" .
 fi
-
-[[ "$force" == "-f" ]] && shift 1
 
 podman run -v $PWD:/app $tag_name "$@"
