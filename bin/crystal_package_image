@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
+
+usage() {
+    printf 'Usage: %s STATIC_BINARY [IMAGE_TAG]\n' "${0##*/}" >&2
+    printf 'Example: %s bin/crystal_china localhost/crystal-china:latest\n' "${0##*/}" >&2
+    exit 2
+}
+
+(( $# == 1 || $# == 2 )) || usage
+
+tmpdir=$(mktemp -d)
+docker_file="$tmpdir/Dockerfile"
+trap 'rm -f -- "$docker_file"; rmdir -- "$tmpdir"' EXIT
+
+binary=$1
+tag_name=${2-$(basename -- "$binary")}
+
+[[ -f "$binary" ]] || die "Binary not found: $binary"
+
+command -v readelf >/dev/null || die "readelf is required (install binutils)"
+
+machine=$(LC_ALL=C readelf -h -- "$binary" | sed -n 's/^[[:space:]]*Machine:[[:space:]]*//p')
+case "$machine" in
+    AArch64) platform=linux/arm64 ;;
+    'Advanced Micro Devices X86-64') platform=linux/amd64 ;;
+    *) die "Unsupported ELF machine: $machine" ;;
+esac
+
+if readelf -l -- "$binary" | grep -q 'INTERP' || readelf -d -- "$binary" | grep -q '(NEEDED)'; then
+    die "Binary is not fully statically linked: $binary
+A scratch image cannot run dynamically linked executables.
+Rebuild with --static, or use a base image containing the required libraries."
+fi
+
+cat <<HEREDOC > $docker_file
+ARG ALPINE_VERSION=3.24
+
+FROM --platform=\$BUILDPLATFORM alpine:\${ALPINE_VERSION} AS runtime_data
+
+RUN apk add --no-cache ca-certificates tzdata
+
+FROM scratch
+
+WORKDIR /app
+
+COPY $binary /app/binary
+
+# HTTPS CA 根证书
+COPY --from=runtime_data /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+# IANA 时区数据库
+COPY --from=runtime_data /usr/share/zoneinfo /usr/share/zoneinfo
+
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+ENV TZDIR=/usr/share/zoneinfo
+ENV LANG=C.UTF-8
+
+ENTRYPOINT ["/app/binary"]
+HEREDOC
+
+BUILD_ARGS=(
+    --platform "$platform"
+    --build-arg "ALPINE_VERSION=${ALPINE_VERSION:-3.24}"
+    --pull=always
+    -t "$tag_name"
+    -f "$docker_file"
+)
+
+
+podman build "${BUILD_ARGS[@]}" .
+
+printf '\nCreated image: %s\n' "$tag_name"
+podman image inspect "$tag_name" --format 'Platform: {{.Os}}/{{.Architecture}}\nImage ID: {{.Id}}'
